@@ -1,0 +1,9 @@
+# Başlangıç bağımlılıkları; ilk çalışan ortam doğrulandıktan sonra sürümler sabitlenecek.
+pandas
+numpy
+scikit-learn
+xgboost
+shap
+matplotlib
+jupyter
+pytest

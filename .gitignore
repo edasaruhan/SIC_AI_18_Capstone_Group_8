@@ -1,0 +1,52 @@
+# Python ve Jupyter
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Yerel veri ve üretilen modeller
+data/**
+!data/README.md
+!data/raw/
+!data/raw/.gitkeep
+!data/processed/
+!data/processed/.gitkeep
+models/**
+!models/.gitkeep
+
+# Yerel veri tabanları ve ortam sırları
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.sqlite-*
+*.sqlite3-*
+.env
+.env.*
+!.env.example
+*.jks
+*.keystore
+
+# Android ve geliştirme ortamları
+.gradle/
+.kotlin/
+**/build/
+local.properties
+.idea/
+*.iml
+.vscode/
+captures/
+.cxx/
+.externalNativeBuild/
+*.apk
+*.aab
+
+# İşletim sistemi ve geçici dosyalar
+.DS_Store
+Thumbs.db
+*.log
+tmp/
