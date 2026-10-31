@@ -6,11 +6,11 @@
 
 | Alan | Güncel kayıt |
 | --- | --- |
-| Current Stage | Aşama 1 — Problem ve veri sözleşmesi (`Not Started`) |
-| Current Task | Çalışma planı hazır; ilk uygulama adımı için kullanıcı onayı bekleniyor. |
-| Last Completed Task | Kaynak belgeler ve repo durumu incelendi; kalıcı çalışma kuralları ve sekiz aşamalı takip planı oluşturuldu, belge/kapsam kontrolleri geçti. Model geliştirme görevi henüz tamamlanmadı. |
-| Next Action | Kullanıcı onayından sonra Aşama 1'deki tahmin hedefini ve pencere/zaman ilişkisini açıklayan ilk sözleşme taslağını hazırlamak; kesin bilgiler ile açık kararları ayırmak. |
-| Current Blockers | İlk uygulama adımı kullanıcı onayı bekliyor. Bu repoda ortak özellik tablosu/şeması, doğrulanmış proxy tanımı, Hamza'nın veri bölmeleri ve Yiğit'in entegrasyon arayüzü henüz bulunmuyor; bunlar gerçek veri deneyleri ve entegrasyon için bağımlılıktır. Sözleşme taslağı ve sonraki sentetik kontroller bu çıktıların tümünü beklemek zorunda değildir. |
+| Current Stage | Aşama 3–4 — İlk gerçek veri araştırması (`In Progress`); Aşama 2 tamamlandı. Aşama 1 ve 8 devam ediyor; nihai protokol tamamlanmış değil. |
+| Current Task | Dataset incelemesi ve 12 katılımcıda ilk kural/LR/RF karşılaştırması tamamlandı; sonuçların ve araştırma varsayımlarının değerlendirilmesi. |
+| Last Completed Task | [Salt-okunur audit](../src/models/dataset_audit.py) ile 342 CSV'nin ilgili alanları tarandı. [Araştırma adaptörü](../src/models/research_data.py) ve [deney](../src/models/real_data_exploration.py) 12.830 pencere çiftiyle çalıştı; [gerçek veri sonuçları](../reports/model_exploration/results.json), grafikler ve 51 başarılı test mevcut. |
+| Next Action | İlk sonuçları kullanıcıyla değerlendir; proxy yüzdeliği ve oturum/kayıt boşluğu politikalarının duyarlılığını kontrol ederek Model Exploration'ın dört başlığına aktar. Nihai model seçimini mevcut küçük alt kümeye göre kesinleştirme. |
+| Current Blockers | Ortak ekip şeması, nihai proxy tanımı, yerel saat/gece eşlemesi, Hamza'nın nihai bölmeleri ve Yiğit'in arayüzü açık. Kullanıcı İsmail'den çıktı olmadığını bildirdi ve mevcut ham veriden ilerlemeyi yetkilendirdi; bu nedenle sınırlı araştırma adaptörü kullanıldı. Bu çıktı nihai veri hattı veya 342 kullanıcının tamamında performans doğrulaması değildir. |
 
 ## Kaynaklar ve kapsam
 
@@ -37,18 +37,18 @@ Bir aşamanın bazı işleri bağımsız ilerleyebilir; tek bir dış bağımlı
 
 Her oturumda ilgili belgeleri ve Git durumunu oku, planı mevcut dosya ve sonuçlarla karşılaştır, uygun tek bir iş parçası seç, uygula ve doğrula. Ardından checkbox'ları, üstteki beş takip alanını ve günlüğü güncelle. Kod işi için çalıştırılan komut ve test sonucu; deney için veri/bölme/ayar ve çıktı konumu kanıt olarak kaydedilir. Hedef dosyaların aşağıda anılması, mevcut veya oluşturulmuş oldukları anlamına gelmez.
 
-Bu ilk oturumun kapsamı yalnızca `AGENTS.md` ve bu plandır. Model kodlamasına veya ilk sözleşme uygulamasına kullanıcı onayıyla geçilecektir.
+İlk planlama oturumunda yalnızca `AGENTS.md` ve bu plan oluşturuldu. Kullanıcının devam talebiyle Aşama 1'in ilk sözleşme çalışmasına geçildi. Çalışma küçük, doğrulanabilir iş parçaları halinde sürer; commit/push için ayrıca onay gerekir.
 
 ## Aşama 1 — Problem ve veri sözleşmesi
 
-**Durum:** `Not Started`
+**Durum:** `In Progress`
 
 **Amaç:** Tahmin problemini, modelin tükettiği tabloyu ve ürettiği çıktıyı ortak ve sınanabilir biçimde tanımlamak.
 
 **Yapılacak işler**
 
-- [ ] Tamamlanan pencere → sonraki pencere hedefini; özellik, tahmin ve sonuç zamanlarını örnek zaman çizelgesiyle doğrula. Pencere sınırı, saat dilimi ve kayıt günü tanımındaki açık kararları ayır.
-- [ ] İsmail'in üreteceği özelliklerin ad, sıra, veri tipi, birim, eksiklik ve geçersiz pencere kurallarını taslaklaştır; sadece Python/Android'de ortak hesaplanabilir özellikleri esas al.
+- [x] Tamamlanan pencere → sonraki pencere hedefini; özellik, tahmin ve sonuç zamanlarını örnek zaman çizelgesiyle doğrula. Pencere sınırı, saat dilimi ve kayıt günü tanımındaki açık kararları ayır. Kanıt: [zaman sözleşmesi taslağı](model_data_contract.md); sentetik doğrulama kaydı aşağıdaki günlükte.
+- [x] İsmail'in üreteceği özelliklerin ad, sıra, veri tipi, birim, eksiklik ve geçersiz pencere kurallarını taslaklaştır; sadece Python/Android'de ortak hesaplanabilir özellikleri esas al. Kanıt: [aday özellik şeması](model_data_contract.md#7-aday-özellik-şeması). Taslak tamamlandı; gerçek veri ve Android eşliği henüz doğrulanmadı.
 - [ ] Kaan–İsmail işbirliğiyle proxy göstergelerini, eğitimde seçilecek eşikleri, gece aralığını ve etiket sürümünü netleştir; proxy ile gerçek istenmeyen kullanım arasındaki sınırlılığı kaydet.
 - [ ] Tahmin olasılığı/skoru, karar etiketi, karar eşiği ve model sürümü için Yiğit'le girdi/çıktı sözleşmesini netleştir; sabit kuralın çıktı anlamını ayrıca belirt.
 - [ ] Hamza'nın bölmeleri için kullanıcı kimliği, özellik/sonuç aralıkları ve geçmiş uygunluğu metaverisini tanımla; kimlik ve hedef sütunlarının yanlışlıkla özellik yapılmasını önle.
@@ -57,7 +57,7 @@ Bu ilk oturumun kapsamı yalnızca `AGENTS.md` ve bu plandır. Model kodlamasın
 
 **Bağımlılıklar:** İsmail'in örnek tablosu ve veri kalitesi bilgisi; Hamza'nın bölme gereksinimleri; Yiğit'in ortak format koordinasyonu; Murat'ın özelliklerin cihazda üretilebilirliğine dair girdisi. Taslak hazırlanabilir; ekip çıktıları olmadan nihai şema onaylanmış sayılmaz.
 
-**İlgili dosyalar:** [Geliştirme notları](development_notes.md), [veri notu](../data/README.md), bu plan; ileride ortak kararlar için ilgili notlar ve `tests/fixtures/` altında sentetik örnekler. İsmail'in `src/data/`, Hamza'nın `src/evaluation/` ve Yiğit'in `src/integration/` alanları bağımlılıktır; değişiklikleri ayrıca kapsamlandırılır.
+**İlgili dosyalar:** [Geliştirme notları](development_notes.md), [veri notu](../data/README.md), [model veri sözleşmesi taslağı](model_data_contract.md), bu plan; ileride gerekirse `tests/fixtures/` altında sentetik örnekler. İsmail'in `src/data/`, Hamza'nın `src/evaluation/` ve Yiğit'in `src/integration/` alanları bağımlılıktır; değişiklikleri ayrıca kapsamlandırılır.
 
 **Tamamlanma kriterleri:** Zaman ilişkisi, özellik/çıktı şeması, proxy tanımı ve sürümü, eksik/geçersiz kayıt kuralları ve bölme metaverisi belgelenmiş; ilgili ekip girdileriyle doğrulanmış; uygulamayı etkileyen açık kararlar çözümlenmiş olmalı. Yalnızca taslak üretmek aşamayı tamamlamaz.
 
@@ -65,18 +65,20 @@ Bu ilk oturumun kapsamı yalnızca `AGENTS.md` ve bu plandır. Model kodlamasın
 
 ## Aşama 2 — Baseline modeller
 
-**Durum:** `Not Started`
+**Durum:** `Completed`
+
+Kullanıcı önceliğiyle, Aşama 1'in nihai ekip doğrulaması beklenmeden yapılandırılabilir model prototipleri geliştirildi. Tamamlanma kapsamı sentetik kod/arayüz doğrulamasıdır; gerçek veri başarısı veya kesinleşmiş etiket/entegrasyon sözleşmesi değildir. Diğer ekiplerin veri işleme, değerlendirme ve entegrasyon kodu değiştirilmedi.
 
 **Amaç:** Ana modellerin karşılaştırılacağı sabit kural ve Logistic Regression yöntemlerini çalıştırılabilir, ortak arayüzlü bir başlangıca dönüştürmek.
 
 **Yapılacak işler**
 
-- [ ] İlk çalışan Python ortamını ve kullanılan bağımlılık sürümlerini doğrula; ortamla ilgili gereken değişikliği ayrıca kapsamlandır.
-- [ ] Aşama 1 sözleşmesine göre eğitim ve tahmin arayüzlerini kur; hedef/kimlik sütunları, özellik sırası ve uyumsuz girdiler için açık kontroller ekle.
-- [ ] Geçmiş/girdi bilgisinden gelecek pencere kararı veren sabit kuralı tanımla; gelecekteki gerçek hedefi kullanan bir “baseline” kurma. Kural ile proxy hedefinin farkını açıkla.
-- [ ] Logistic Regression için gereken eksik değer işleme ve ölçeklemeyi eğitimde öğrenen pipeline'ı kur; dönüşümleri doğrulama/test verisinde yeniden öğrenme.
-- [ ] Eğitim ve tahmini küçük sentetik tabloyla çalıştır; model bazında olasılık/skor ve karar çıktısını doğrula.
-- [ ] Özellik sırası, eksik/yanlış tip, sınır değerleri ve tek sınıflı eğitim durumu için anlamlı testler ekle; elde edilen sonucu bu plana kaydet.
+- [x] İlk çalışan Python ortamını ve kullanılan bağımlılık sürümlerini doğrula; ortamla ilgili gereken değişikliği ayrıca kapsamlandır. Baseline için yerel `.venv`, Python 3.11.15; sürümler günlükte kayıtlı, `pip check` başarılı.
+- [x] Aşama 1 sözleşmesine göre eğitim ve tahmin arayüzlerini kur; hedef/kimlik sütunları, özellik sırası ve uyumsuz girdiler için açık kontroller ekle. `fit`, `predict_scores`, `predict`; adla seçim ve kontrollü sıralama, açık girdi/etiket hataları.
+- [x] Geçmiş/girdi bilgisinden gelecek pencere kararı veren sabit kuralı tanımla; gelecekteki gerçek hedefi kullanan bir “baseline” kurma. Kural ile proxy hedefinin farkını açıkla. Kural eşiği kullanıcı parametresi; model sonraki pencere etiketini üretmez/girdi yapmaz, kural skoru olasılık değildir.
+- [x] Logistic Regression için gereken eksik değer işleme ve ölçeklemeyi eğitimde öğrenen pipeline'ı kur; dönüşümleri doğrulama/test verisinde yeniden öğrenme. Eğitim medyanı, eksiklik göstergeleri, ölçekleyici ve sınıflandırıcı aynı pipeline'da.
+- [x] Eğitim ve tahmini küçük sentetik tabloyla çalıştır; model bazında olasılık/skor ve karar çıktısını doğrula. Demo: 48 eğitim satırı, 8 yeni sentetik tahmin; sonraki pencere oyuncak etiketi ayrı üretiliyor.
+- [x] Özellik sırası, eksik/yanlış tip, sınır değerleri ve tek sınıflı eğitim durumu için anlamlı testler ekle; elde edilen sonucu bu plana kaydet. `37 passed`; yalnızca model testleri, katılımcı/zaman değerlendirmesi değil.
 
 **Bağımlılıklar:** Kullanılabilir sözleşme taslağı; gerçek veri deneyi için İsmail'in uygun özellik/etiket tablosu ve Hamza'nın bölmeleri. Kesinleşmeyen sözleşmeyle sentetik çalışma yapılırsa geçici kararlar işaretlenir; nihai entegrasyon gibi sunulmaz.
 
@@ -88,12 +90,13 @@ Bu ilk oturumun kapsamı yalnızca `AGENTS.md` ve bu plandır. Model kodlamasın
 
 ## Aşama 3 — Ana makine öğrenmesi modelleri
 
-**Durum:** `Not Started`
+**Durum:** `In Progress`
 
 **Amaç:** Random Forest ve XGBoost'u baseline'larla aynı veri ve arayüz düzeninde tekrar üretilebilir biçimde eğitmek.
 
 **Yapılacak işler**
 
+- [x] Model Exploration için Random Forest'ı mevcut iki baseline ile aynı gerçek veri araştırmasında çalıştır; ayarları ve kanıtları kaydet. Kanıt: [deney kodu](../src/models/real_data_exploration.py) ve [sonuçlar](../reports/model_exploration/results.json). XGBoost ve ana modellerin nihai ortak API'si bu işlemde tamamlanmadı.
 - [ ] Random Forest ve XGBoost'u ortak eğitim/tahmin arayüzüne bağla.
 - [ ] Başlangıç hiperparametrelerini, gerekçelerini ve rastgelelik tohumunu kaydet; sayısal değerler henüz seçilmiş değildir.
 - [ ] Aynı veri/bölme/etiket sürümünün kullanımını ve modelin beklediği özellik sırasını kaydet.
@@ -111,12 +114,13 @@ Bu ilk oturumun kapsamı yalnızca `AGENTS.md` ve bu plandır. Model kodlamasın
 
 ## Aşama 4 — Model değerlendirme ve karşılaştırma
 
-**Durum:** `Not Started`
+**Durum:** `In Progress`
 
 **Amaç:** Hamza'nın değerlendirme düzeninde bütün modelleri aynı koşullarla karşılaştırmak; genelleme ve sızıntı risklerini görünür kılmak.
 
 **Yapılacak işler**
 
+- [x] Kullanıcı onayıyla, Hamza'nın nihai düzeni yerine geçmeyen ilk araştırma karşılaştırmasını üret: 12 kullanıcı, 3 katlı GroupKFold, eğitim-katı proxy eşikleri, üç model, metrikler ve OOF görselleri. Kanıtlar `reports/model_exploration/` altında; kullanıcı bazlı ve satır düzeyindeki çıktılar yerel `data/processed/model_exploration/` altında.
 - [ ] Hamza'nın katılımcıya göre gruplanmış ve zaman temelli bölmelerini kullan; alternatif bir değerlendirme altyapısını izinsiz kurma.
 - [ ] Eğitim/doğrulama/test kullanıcılarını ve özellik/sonuç aralıklarını kontrol et; genel modelin test kullanıcısını eğitimde görmediğini doğrula.
 - [ ] Precision, recall, F1, PR-AUC ve confusion matrix çıktıları ile gerekli karşılaştırma görsellerini Hamza'nın metrik düzeninden elde et.
@@ -208,13 +212,13 @@ Bu ilk oturumun kapsamı yalnızca `AGENTS.md` ve bu plandır. Model kodlamasın
 
 ## Aşama 8 — Model dokümantasyonu ve raporlama
 
-**Durum:** `Not Started`
+**Durum:** `In Progress`
 
 **Amaç:** Model Exploration ve final rapor/sunumunun model bölümünü yeniden izlenebilir deney kanıtlarıyla hazırlamak. Raporlama önceki aşamalarla paralel yürütülür; bütün deneylerin bitmesini beklemez.
 
 **Yapılacak işler**
 
-- [ ] Model Exploration ödevinin değerlendirme yönergesi varsa incele; mevcut repoda ayrıntılı yönerge yok, teslim formatı/ek ölçütler uydurma.
+- [x] Kullanıcının paylaştığı Model Exploration gereksinimlerini incele: Model Selection (gerekçe, güçlü/zayıf yönler), Model Training (ayarlar ve çapraz doğrulama), Model Evaluation (metrikler ve görseller), Code Implementation (açıklamalı veri/özellik ve model kodu). Özel teslim dosya biçimi veya ek puanlama ölçütleri belirtilmedi.
 - [ ] Model Exploration için problem, yöntem, baseline ve mevcut ilk deney çıktılarını hazırla; yalnızca sentetik çalışma varsa bunu açıkça belirt, gerçek veri sonuçlarının eksikliğini kaydet.
 - [ ] Veri/etiket/bölme sürümleri, bağımlılık sürümleri, tohumlar, eğitim ayarları ve çalıştırma komutlarını raporla ilişkilendir.
 - [ ] Aynı koşullu model karşılaştırma tablolarını, PR/confusion matrix gibi gerekli görselleri ve kişiselleştirme eğrilerini gerçek çıktılardan üret.
@@ -237,3 +241,15 @@ Bu ilk oturumun kapsamı yalnızca `AGENTS.md` ve bu plandır. Model kodlamasın
 | 2026-10-30 — Planlama | İstenen sekiz kaynak dosya ve mevcut Git/dizin durumu incelendi. Kaan'ın model işleri ile İsmail/Hamza/Murat/Yiğit bağımlılıkları ayrıldı. | Başlangıç commit'i `f4c1483`; kaynak, veri, model ve test klasörlerinde uygulama çıktısı yok. Bu kayıt gerçek veri deneyi değildir. | Kullanıcı onayı sonrası Aşama 1'in ilk sözleşme taslağı. |
 | 2026-10-30 — Çalışma düzeni | Yalnızca `AGENTS.md` ve bu plan oluşturuldu. İlerleme, takvim yerine doğrulanabilir iş/çıktıya bağlı; bütün geliştirme aşamaları `Not Started`. Kesin şema, eşikler, hiperparametreler ve mobil format açık bırakıldı çünkü doğrulanmış ekip kararları yok. | Belge tutarlılık ve kapsam kontrolü bu oturumun doğrulamasıdır; model kodu/testi veya performans sonucu üretilmedi. | İlk uygulama için kullanıcı onayını bekle; commit/push ayrıca onay gerektirir. |
 | 2026-10-30 — Belge doğrulaması | Kaynak belgelerle yöntem ve görev dağılımı karşılaştırıldı; tutarsızlık bulunmadı. Sekiz aşamanın zorunlu alanları, 55 açık görev, üst takip alanları, yerel bağlantılar ve iki dosyalık değişiklik kapsamı kontrol edildi. | Oturum içi Python belge kontrolü başarılı: 8 aşama, 55 işaretlenmemiş görev, yalnızca istenen iki yeni dosya, mevcut izlenen dosyalarda değişiklik yok. Model testi değildir. | Aşama 1'in tahmin hedefi ve pencere/zaman sözleşmesi taslağı için kullanıcı onayını bekle. |
+| 2026-10-30 — Aşama 1 / zaman sözleşmesi | Kullanıcı devam talebiyle ilk uygulama adımını yetkilendirdi. Başlangıçta çalışma alanı temizdi; `kaan`, `origin/kaan` dalının bir commit önündeydi (`fa4a306`). Önceki planlama tekrar üretilmeden [zaman sözleşmesi taslağı](model_data_contract.md) eklendi. Yarı açık aralık yalnızca taslak öneri olarak ayrıldı; saat dilimi, hizalama, kayıt günü ve eksik pencere kararları kesinleştirilmedi. | Oturum içi `python3` doğrulaması belge tablosundaki W0/W1/W2 aralıklarını okuyarak 20 kontrolü geçti: süreler, hedef hizası, sınır olayları, bitişik örnek sızıntısı ve bir pencere atlama örneği. Yerel bağlantı, boşluk, aşama/checkbox kontrolleri ve `git diff --check` geçti. Yalnızca zaman taslağı doğrulandı; gerçek veri/model/Android testi yapılmadı. | Aday özelliklerin şema taslağı: ad/sıra/tip/birim ve eksik/geçersiz değer kuralları. Aşama 1 devam ediyor; kalan işler ve ekip bağımlılıkları açık. |
+| 2026-10-30 — Aşama 1 / aday özellik şeması | Önceki oturumun commit edilmemiş iki dosyalık çalışması korundu. Sözleşmenin 7. bölümünde kaynak plandaki sekiz aday grup için ad/sıra/tip/birim, geçerlilik ve eksiklik önerileri eklendi. Sayı/süre sıfırı ile bilinmeyen kayıt; önceki tam oturum ile 30 dakikalık ekran süresi; geçmişten kişisel sapma ile cold-start eksikliği ayrıldı. Alanlar, formüller ve birimler ekip tarafından kesinleştirilmiş gibi sunulmadı. | Oturum içi `python3` kontrolü Markdown şema tablosunu ve JSON örneklerini okudu: 8 sıralı aday alan, 2 sentetik satır, fark hesabı, cold-start null ayrımı, 10 geçersiz değer örneği, eksik/yanlış sıralı alanlar ve uzun önceki oturum/negatif sapma örnekleri kontrol edildi. Kaynak notlarla kapsam, yerel bağlantılar ve `git diff --check` doğrulandı. Gerçek veri çıkarımı, Android eşliği veya model performansı test edilmedi. | Proxy karar taslağı: İsmail'le netleştirilecek göstergeleri ve eğitimde eşik/duyarlılık yaklaşımını hazırlamak. Nihai eşik seçimi veri bağımlılığı olarak açık kalır; Aşama 1 devam eder. |
+| 2026-10-30 — Baseline ortamı | Kullanıcı çalışan model kodunu önceliklendirdi; yalnızca mevcut gereksinimlerdeki baseline/test bağımlılıkları yerel `.venv` içine kuruldu. Python 3.11.15, NumPy 2.4.6, pandas 3.1.0, scikit-learn 1.9.1, pytest 9.2.0 doğrulandı; diğer model ailelerinin ortamı doğrulanmış sayılmaz. | `.venv/bin/python -m pip check`: `No broken requirements found.` Aynı doğrudan sürümler `pip install numpy==2.4.6 pandas==3.1.0 scikit-learn==1.9.1 pytest==9.2.0` ile kurulabilir; bu kayıt tam bağımlılık kilidi değildir. | Çalışan ortamı baseline incelemesi için koru. |
+| 2026-10-30 — Baseline uygulaması ve kararları | `src/models/` altında yapılandırılabilir `FeatureSpec`, `ThresholdRule`, `RuleBaseline`, `LogisticRegressionBaseline` ve tekrar kullanılabilir pipeline eklendi. Etiketler çağıran koddan ayrı `y` olarak alınır; proxy etiket üretimi yapılmaz. Özellikler adla seçilip sıralanır; ek kimlik/hedef sütunları girdiye katılmaz. | Kural eşikleri zorunlu parametre; skor eşleşen kural oranı, olasılık değil. Kural girdisi eksikse negatif varsaymak yerine açık hata verir. Logistic Regression karar eşiği ayrı parametre; eğitim medyanı ve eksiklik göstergeleri kullanılır. Tamamen eksik eğitim sütunu sayısal sıfır yer tutucusu ve eksiklik göstergesiyle korunur; bu gözlenen sıfır kullanım değildir. Tek sınıflı LR eğitimi açık hata verir. | Bu davranışları kullanıcıyla değerlendir; geçerli pencereyi belirlemek veri/değerlendirme sorumlularında kalır. |
+| 2026-10-30 — Baseline testleri ve demo | İlk çalıştırmada özel model sarmalayıcılarının sklearn eğitim-durumu kontrolüne uyumsuzluğu görüldü; sarmalayıcılarda açık `NotFittedError` kontrolüyle giderildi. Sentetik testler ve demo tekrar başarıyla çalıştı. Önceki veri sözleşmesi korundu; yeni Markdown dosyası veya diğer ekip alanlarına kod eklenmedi. | `.venv/bin/python -m pytest -q --tb=short`: `37 passed in 0.81s`. `.venv/bin/python -m src.models.synthetic_demo`: 48 satırla eğitim, 8 yeni satırda iki modelden de `[0, 1, 0, 1, 0, 1, 0, 1]`; LR skorları `[0.0423, 0.9895, 0.0333, 0.9840, 0.0305, 0.9499, 0.0093, 0.9910]`. Oyuncak eşikler yalnızca demo/test içindir; performans sonucu değildir. | Kullanıcı değerlendirmesini bekle; Random Forest/XGBoost veya sonraki aşamaya geçme. Commit/push yapılmadı. |
+| 2026-10-30 — Yerel dataset ve Git dışlama | Datasetin `src/data/mobile_phone_use/` altında bulunduğu doğrulandı. `.gitignore` içine yalnızca bu klasörü dışlayan kural eklendi; kök veri kuralı `/data/**` olarak açıkça sınırlandı. Veri taşınmadı veya değiştirilmedi. | Dataset yerelde mevcut, Git tarafından takip edilmiyor ve yeni dosya listesine girmiyor. `git check-ignore` ile dataset dışlaması; `src/data/` Python dosyalarının ve kök veri README/yer tutucularının takip edilebilirliği doğrulandı. | Yerel veri okunabilir; veri içeriği/özellik çıkarımı bu işlemde incelenmedi. Model aşaması ve önceki değerlendirme bekleme durumu değişmedi. |
+| 2026-10-30 — Dataset incelemesi | Dataset PDF'sinin 3 sayfası ve Sensors.xlsx'in iki sayfası okundu. 342 CSV'nin bütün başlıkları ve tüm satırlarındaki modelle ilgili 8 alan salt okunur, parçalı tarandı. CSV'ler 4.490.195.916 bayt, 31.562.291 satır ve tek ortak 80 sütunlu şema içeriyor; kimlik eşleşmesi tam, dosya okuma hatası yok. | Yerel `data/processed/dataset_audit.json`: tüm dosyalarda ham sıra bozulması; 339 kullanıcıda On/Off/Unlocked, 3'ünde Off/Unlocked; fiilen 24 sensor_id. 642 olayın yılı 1980/2012/2015; Screen/App olaylarının tamamı 2016. PHQ8 yalnızca 64 kullanıcıda var. Anket/ESM özetleri hedef veya ileriye dönük özellik olarak alınmadı. | Ham olaylardan hazır model tablosu varsayma; sensör kapsamı, sıralama ve saat politikasını gözet. |
+| 2026-10-30 — Gerçek veri araştırma kapsamı | İsmail'den hazır çıktı olmadığı kullanıcı tarafından bildirildi; mevcut ham datasetle ilerleme yetkilendirildi. `src/models/research_data.py` sınırlı araştırma adaptörü olarak eklendi; ortak `src/data/`, `src/evaluation/`, Android veya entegrasyon kodu yazılmadı. | İlk 12 alfabetik CSV önceden tanımlı örneklem; temsil gücü iddiası yok. 30 dakikalık yarı açık UTC pencereleri; >30 dakika kayıt boşluğu, kesik/belirsiz oturum ve >120 dakika oturum için açık araştırma dışlamaları. On olayı tek başına unlock-to-Off oturumunu bitirmiyor. Boşluktan sonra ekran durumu yeniden gözlenmeden kullanım yok varsayılmıyor. Önceki oturum süresi yalnızca tahmin sınırından önce biten, boşluk kesmeyen oturumlardan geliyor. | Oturum ve kayıt boşluğu eşiklerinin duyarlılığını sınamadan nihai veri kalitesi kuralı sayma. |
+| 2026-10-30 — Özellik, proxy ve bölme kararları | İlk deney yalnızca ekran aktif süresi, unlock sayısı, filtrelenmiş uygulama geçişi ve önceki tamamlanmış oturum süresini kullanıyor. Launcher (+), klavye (=), sistem (-) ve boş uygulama olayları dışlandı. Yerel saat/gece ve kişisel sapma belirsizlikleri bu deneye taşınmadı. | Proxy: sonraki penceredeki en uzun kesintisiz unlocked kullanım parçası VEYA unlock sayısı, eğitim kullanıcılarının ilgili 90. yüzdelik eşiğini geçiyorsa pozitif; sıfır kullanımın pozitif olmaması için alt sınırlar 1 saniye/1 unlock. Üç GroupKFold katında 8 eğitim / 4 test kullanıcısı; eşikler sadece eğitimden öğrenildi. Bu nihai istenmeyen kullanım etiketi değil, sınırlı operasyonel proxy. | Proxy ve kapsam duyarlılığını önceden belirtilmiş ayarlarla kontrol et; test sonuçlarından gizlice eşik seçme. |
+| 2026-10-30 — Gerçek veri sonuçları | Seçilen dosyalarda 1.140.110 ham satır, 14.603 aday pencere, 13.092 geçerli pencere ve 12.830 geçerli ardışık pencere çifti üretildi. İlgili alt kümede dışlanan yıl-anomalili satır yok; tüm datasetin anomalileri ayrı auditte kayıtlı. Ayarlar, fold sonuçları, ortam, kaynak SHA256'ları ve kullanıcı metrikleri kaydedildi. | `.venv/bin/python -m src.models.real_data_exploration`: başarılı. Kat ortalaması F1 / AP: kural 0.488 / 0.347, LR 0.319 / 0.460, RF 0.489 / 0.449. LR C=1, max_iter=1000, karar=0.5; RF 100 ağaç, max_depth=8, min_samples_leaf=5, balanced, seed=42. Eşik araması yok. RF'nin F1'i kurala çok yakın, yanlış uyarısı daha yüksek; nihai üstünlük iddiası yok. | Model seçimini yalnızca bu ön deneye dayandırma; dört ödev başlığı için kanıtları kullanırken sınırlarını belirt. |
+| 2026-10-30 — Doğrulama ve yerel çıktılar | Baseline testlerine audit/parça sınırı, zaman sırası, oturum sınırları, eksiklik, boşluk sonrası durum, sonraki pencere eşleme ve kullanıcı ayrımı testleri eklendi. Confusion matrix ve ROC/PR PNG'leri görsel kontrol edildi; PR basamaklı çizildi. Matplotlib önbelleği yazılabilir geçici dizine yönlendirildi. | `python -m pytest -q --tb=short`: 51 test başarılı. `pip check` başarılı. Audit ve özellik/tahmin satırları `data/processed/` altında Git dışı; `reports/model_exploration/` yalnızca toplu sonuç/grafik içeriyor. Ham dosyalar değiştirilmedi. pypdf/openpyxl inceleme için, matplotlib mevcut gereksinimdeki görseller için kuruldu. | İlerlemeyi gerçek ön deney olarak koru; nihai kişiselleştirme/pilot doğrulaması gibi sunma. Commit/push yapılmadı. |
+| 2026-10-31 — Git paylaşımı öncesi kontrol | Kullanıcı mevcut çalışmayı commit/push ve main birleştirmesi için yetkilendirdi. Önce `git fetch origin` çalıştırıldı; uzak kaan ve main dallarında yeni commit olmadığı doğrulandı. | `.venv/bin/python -m pytest -q --tb=short`: 51 test başarılı. Ham dataset, türetilmiş satır verileri ve datasetle taşınan referans PDF Git dışında tutuluyor; kod/testler, sözleşme ve toplu deney sonuçları paylaşım kapsamına alındı. Araştırma aşaması bu işlemle değişmedi. | Kaan dalını senkronize edip commit/push yap; ardından main dalına birleştir ve uzak dal durumunu doğrula. |

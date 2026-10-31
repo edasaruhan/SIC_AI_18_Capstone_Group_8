@@ -1,0 +1,386 @@
+{
+  "scope": "Preliminary real-data proxy exploration, not final personalization evaluation",
+  "selection": "First 12 CSV filenames in lexicographic order; not a representative sample",
+  "participants": 12,
+  "valid_window_pairs": 12830,
+  "features": [
+    "screen_active_seconds",
+    "unlock_count",
+    "app_switch_count",
+    "previous_session_duration_seconds"
+  ],
+  "window_config": {
+    "gap_minutes": 30,
+    "max_session_minutes": 120,
+    "event_year": 2016
+  },
+  "cross_validation": {
+    "method": "GroupKFold by participant",
+    "folds": 3,
+    "hyperparameter_search": false
+  },
+  "proxy": {
+    "quantile": 0.9,
+    "fit_on": "training users only in each fold",
+    "definition": "next-window longest unlocked run >= threshold OR unlock count >= threshold; no night component"
+  },
+  "hyperparameters": {
+    "Logistic Regression": {
+      "C": 1.0,
+      "max_iter": 1000,
+      "random_state": 42,
+      "decision_threshold": 0.5,
+      "preprocessing": "training median + missing indicators + StandardScaler"
+    },
+    "Random Forest": {
+      "n_estimators": 100,
+      "max_depth": 8,
+      "min_samples_leaf": 5,
+      "class_weight": "balanced",
+      "random_state": 42,
+      "n_jobs": 1,
+      "preprocessing": "training median + missing indicators"
+    },
+    "Rule": {
+      "combination": "any current screen-time/unlock threshold met",
+      "score": "match fraction, not a probability"
+    }
+  },
+  "metric_definitions": {
+    "pr_auc_ap": "average precision, not trapezoidal PR integration",
+    "false_alerts": "FP / unique evaluated participant-UTC-date pairs, including partial days",
+    "mean_metrics": "unweighted mean over held-out participant folds",
+    "plots": "pooled OOF; proxy thresholds may differ between folds"
+  },
+  "mean_fold_metrics": {
+    "Logistic Regression": {
+      "precision": 0.5702069692499797,
+      "recall": 0.22354808833068393,
+      "f1": 0.31858529103134237,
+      "pr_auc_ap": 0.4602424301976524,
+      "roc_auc": 0.7632636383413637,
+      "false_alerts_per_evaluated_participant_utc_day": 1.5504178463275895
+    },
+    "Random Forest": {
+      "precision": 0.3719002179683142,
+      "recall": 0.7540459023130621,
+      "f1": 0.4890450335142757,
+      "pr_auc_ap": 0.44910699786282066,
+      "roc_auc": 0.75893179377598,
+      "false_alerts_per_evaluated_participant_utc_day": 10.281503219015802
+    },
+    "Rule": {
+      "precision": 0.47116622950412096,
+      "recall": 0.506213765500755,
+      "f1": 0.4879767325966892,
+      "pr_auc_ap": 0.34721075004436824,
+      "roc_auc": 0.6740216102038793,
+      "false_alerts_per_evaluated_participant_utc_day": 4.860937852349075
+    }
+  },
+  "fold_results": [
+    {
+      "model": "Rule",
+      "fold": 1,
+      "thresholds": {
+        "longest_session_seconds": 338.8574000000003,
+        "unlock_count": 3.0
+      },
+      "training_rows": 8697,
+      "test_rows": 4133,
+      "training_users": 8,
+      "test_users": 4,
+      "positive_fraction": 0.326881200096782,
+      "precision": 0.543661971830986,
+      "recall": 0.5714285714285714,
+      "f1": 0.5571995669433417,
+      "pr_auc_ap": 0.4512357078555268,
+      "roc_auc": 0.6694753360532257,
+      "confusion_matrix": [
+        [
+          2134,
+          648
+        ],
+        [
+          579,
+          772
+        ]
+      ],
+      "false_alerts_per_evaluated_participant_utc_day": 6.415841584158416,
+      "evaluated_participant_utc_days": 101,
+      "rows": 4133,
+      "positive_rows": 1351
+    },
+    {
+      "model": "Logistic Regression",
+      "fold": 1,
+      "thresholds": {
+        "longest_session_seconds": 338.8574000000003,
+        "unlock_count": 3.0
+      },
+      "training_rows": 8697,
+      "test_rows": 4133,
+      "training_users": 8,
+      "test_users": 4,
+      "positive_fraction": 0.326881200096782,
+      "precision": 0.6527331189710611,
+      "recall": 0.3005181347150259,
+      "f1": 0.41155600608210846,
+      "pr_auc_ap": 0.5568408920729128,
+      "roc_auc": 0.7432990233823124,
+      "confusion_matrix": [
+        [
+          2566,
+          216
+        ],
+        [
+          945,
+          406
+        ]
+      ],
+      "false_alerts_per_evaluated_participant_utc_day": 2.1386138613861387,
+      "evaluated_participant_utc_days": 101,
+      "rows": 4133,
+      "positive_rows": 1351
+    },
+    {
+      "model": "Random Forest",
+      "fold": 1,
+      "thresholds": {
+        "longest_session_seconds": 338.8574000000003,
+        "unlock_count": 3.0
+      },
+      "training_rows": 8697,
+      "test_rows": 4133,
+      "training_users": 8,
+      "test_users": 4,
+      "positive_fraction": 0.326881200096782,
+      "precision": 0.4947267497603068,
+      "recall": 0.7638786084381939,
+      "f1": 0.6005237125400058,
+      "pr_auc_ap": 0.5626274482821287,
+      "roc_auc": 0.7451914097233936,
+      "confusion_matrix": [
+        [
+          1728,
+          1054
+        ],
+        [
+          319,
+          1032
+        ]
+      ],
+      "false_alerts_per_evaluated_participant_utc_day": 10.435643564356436,
+      "evaluated_participant_utc_days": 101,
+      "rows": 4133,
+      "positive_rows": 1351
+    },
+    {
+      "model": "Rule",
+      "fold": 2,
+      "thresholds": {
+        "longest_session_seconds": 450.28100000000103,
+        "unlock_count": 3.0
+      },
+      "training_rows": 8447,
+      "test_rows": 4383,
+      "training_users": 8,
+      "test_users": 4,
+      "positive_fraction": 0.243440565822496,
+      "precision": 0.44483671668137686,
+      "recall": 0.4723523898781631,
+      "f1": 0.4581818181818182,
+      "pr_auc_ap": 0.3514509384524739,
+      "roc_auc": 0.6453906141363392,
+      "confusion_matrix": [
+        [
+          2687,
+          629
+        ],
+        [
+          563,
+          504
+        ]
+      ],
+      "false_alerts_per_evaluated_participant_utc_day": 5.933962264150943,
+      "evaluated_participant_utc_days": 106,
+      "rows": 4383,
+      "positive_rows": 1067
+    },
+    {
+      "model": "Logistic Regression",
+      "fold": 2,
+      "thresholds": {
+        "longest_session_seconds": 450.28100000000103,
+        "unlock_count": 3.0
+      },
+      "training_rows": 8447,
+      "test_rows": 4383,
+      "training_users": 8,
+      "test_users": 4,
+      "positive_fraction": 0.243440565822496,
+      "precision": 0.5133333333333333,
+      "recall": 0.21649484536082475,
+      "f1": 0.3045484508899143,
+      "pr_auc_ap": 0.4492649615082378,
+      "roc_auc": 0.7353437029064726,
+      "confusion_matrix": [
+        [
+          3097,
+          219
+        ],
+        [
+          836,
+          231
+        ]
+      ],
+      "false_alerts_per_evaluated_participant_utc_day": 2.0660377358490565,
+      "evaluated_participant_utc_days": 106,
+      "rows": 4383,
+      "positive_rows": 1067
+    },
+    {
+      "model": "Random Forest",
+      "fold": 2,
+      "thresholds": {
+        "longest_session_seconds": 450.28100000000103,
+        "unlock_count": 3.0
+      },
+      "training_rows": 8447,
+      "test_rows": 4383,
+      "training_users": 8,
+      "test_users": 4,
+      "positive_fraction": 0.243440565822496,
+      "precision": 0.38146341463414635,
+      "recall": 0.7328959700093721,
+      "f1": 0.5017645171639397,
+      "pr_auc_ap": 0.4035817886217444,
+      "roc_auc": 0.7078855974214934,
+      "confusion_matrix": [
+        [
+          2048,
+          1268
+        ],
+        [
+          285,
+          782
+        ]
+      ],
+      "false_alerts_per_evaluated_participant_utc_day": 11.962264150943396,
+      "evaluated_participant_utc_days": 106,
+      "rows": 4383,
+      "positive_rows": 1067
+    },
+    {
+      "model": "Rule",
+      "fold": 3,
+      "thresholds": {
+        "longest_session_seconds": 522.456,
+        "unlock_count": 4.0
+      },
+      "training_rows": 8516,
+      "test_rows": 4314,
+      "training_users": 8,
+      "test_users": 4,
+      "positive_fraction": 0.08298562818729717,
+      "precision": 0.425,
+      "recall": 0.4748603351955307,
+      "f1": 0.44854881266490765,
+      "pr_auc_ap": 0.23894560382510419,
+      "roc_auc": 0.7071988804220729,
+      "confusion_matrix": [
+        [
+          3726,
+          230
+        ],
+        [
+          188,
+          170
+        ]
+      ],
+      "false_alerts_per_evaluated_participant_utc_day": 2.233009708737864,
+      "evaluated_participant_utc_days": 103,
+      "rows": 4314,
+      "positive_rows": 358
+    },
+    {
+      "model": "Logistic Regression",
+      "fold": 3,
+      "thresholds": {
+        "longest_session_seconds": 522.456,
+        "unlock_count": 4.0
+      },
+      "training_rows": 8516,
+      "test_rows": 4314,
+      "training_users": 8,
+      "test_users": 4,
+      "positive_fraction": 0.08298562818729717,
+      "precision": 0.5445544554455446,
+      "recall": 0.15363128491620112,
+      "f1": 0.23965141612200436,
+      "pr_auc_ap": 0.37462143701180645,
+      "roc_auc": 0.8111481887353063,
+      "confusion_matrix": [
+        [
+          3910,
+          46
+        ],
+        [
+          303,
+          55
+        ]
+      ],
+      "false_alerts_per_evaluated_participant_utc_day": 0.44660194174757284,
+      "evaluated_participant_utc_days": 103,
+      "rows": 4314,
+      "positive_rows": 358
+    },
+    {
+      "model": "Random Forest",
+      "fold": 3,
+      "thresholds": {
+        "longest_session_seconds": 522.456,
+        "unlock_count": 4.0
+      },
+      "training_rows": 8516,
+      "test_rows": 4314,
+      "training_users": 8,
+      "test_users": 4,
+      "positive_fraction": 0.08298562818729717,
+      "precision": 0.2395104895104895,
+      "recall": 0.7653631284916201,
+      "f1": 0.3648468708388815,
+      "pr_auc_ap": 0.38111175668458896,
+      "roc_auc": 0.8237183741830527,
+      "confusion_matrix": [
+        [
+          3086,
+          870
+        ],
+        [
+          84,
+          274
+        ]
+      ],
+      "false_alerts_per_evaluated_participant_utc_day": 8.446601941747574,
+      "evaluated_participant_utc_days": 103,
+      "rows": 4314,
+      "positive_rows": 358
+    }
+  ],
+  "environment": {
+    "python": "3.11.15",
+    "numpy": "2.4.6",
+    "pandas": "3.1.0",
+    "scikit-learn": "1.9.1",
+    "matplotlib": "3.11.2"
+  },
+  "limitations": [
+    "12-user default subset; not all 342 participants and not representative.",
+    "Proxy labels do not validate unwanted use, addiction or benefit to users.",
+    "Session/gap policies are explicit research assumptions and require sensitivity checks.",
+    "Quality-window selection is retrospective, not verified live collection coverage.",
+    "No personal-only/sample-weighted history curves, user-feedback validation or untouched final test.",
+    "No local-time/night features: raw UTC and source local-time fields require further reconciliation."
+  ]
+}
