@@ -137,6 +137,23 @@ def compare_models(table: pd.DataFrame, *, folds: int = 3, quantile: float = 0.9
     return results, means, pd.concat(predictions, ignore_index=True), participant_results
 
 
+def coverage_summary(diagnostics: list[dict]) -> dict:
+    """Summarize exclusions without silently equating selected and evaluated users."""
+    keys = ("raw_rows", "excluded_timestamp_rows", "candidate_windows", "valid_windows",
+            "paired_windows", "recording_gaps", "long_or_zero_sessions",
+            "interrupted_sessions", "unclosed_sessions", "ambiguous_screen_timestamps",
+            "ambiguous_app_timestamps")
+    totals = {key: sum(int(item[key]) for item in diagnostics) for key in keys}
+    totals["invalid_windows"] = totals["candidate_windows"] - totals["valid_windows"]
+    totals["valid_windows_without_valid_next_window"] = totals["valid_windows"] - totals["paired_windows"]
+    return {
+        "selected_participants": len(diagnostics),
+        "evaluated_participants": sum(item["paired_windows"] > 0 for item in diagnostics),
+        "excluded_participants_no_valid_pairs": sum(item["paired_windows"] == 0 for item in diagnostics),
+        "totals": totals,
+    }
+
+
 def plot_results(predictions: pd.DataFrame, output: Path):
     cache = Path(tempfile.gettempdir()) / "sic-exploration-cache"
     cache.mkdir(parents=True, exist_ok=True)
@@ -193,7 +210,8 @@ def main():
     if not 2 <= args.folds <= args.participants:
         parser.error("Require 2 <= folds <= participants")
     config = WindowConfig(args.gap_minutes, args.max_session_minutes)
-    files = sorted((args.dataset / "data").glob("*.csv"))[:args.participants]
+    available_files = sorted((args.dataset / "data").glob("*.csv"))
+    files = available_files[:args.participants]
     if len(files) != args.participants:
         parser.error("Not enough participant CSVs")
     frames, diagnostics, manifest = [], [], []
@@ -208,19 +226,33 @@ def main():
         manifest.append({"file": file.name, "bytes": file.stat().st_size, "sha256": digest.hexdigest()})
         print(f"Prepared {file.name}: {len(frame)} valid adjacent-window pairs", flush=True)
     table = pd.concat(frames, ignore_index=True)
+    coverage = coverage_summary(diagnostics)
+    if coverage["evaluated_participants"] < args.folds:
+        parser.error("Too few participants with valid adjacent-window pairs for the requested folds")
+    args.workdir.mkdir(parents=True, exist_ok=True)
+    # Preserve the expensive raw-log preparation even if later training fails.
+    table.to_csv(args.workdir / "windows.csv", index=False)
+    local = {"diagnostics": diagnostics, "source_manifest": manifest, "coverage": coverage,
+             "excluded_participants": [
+                 {"participant_id": item["participant_id"], "reason": "no_valid_adjacent_window_pairs"}
+                 for item in diagnostics if item["paired_windows"] == 0
+             ]}
+    (args.workdir / "local_details.json").write_text(json.dumps(local, indent=2, allow_nan=False) + "\n")
+    print(f"Coverage: {coverage['evaluated_participants']}/{len(files)} users, {len(table)} valid window pairs", flush=True)
     results, means, predictions, user_metrics = compare_models(
         table, folds=args.folds, quantile=args.proxy_quantile,
     )
-    args.workdir.mkdir(parents=True, exist_ok=True)
     args.output.mkdir(parents=True, exist_ok=True)
-    table.to_csv(args.workdir / "windows.csv", index=False)
     predictions.to_csv(args.workdir / "oof_predictions.csv", index=False)
-    local = {"diagnostics": diagnostics, "source_manifest": manifest, "per_user_metrics": user_metrics}
+    local["per_user_metrics"] = user_metrics
     (args.workdir / "local_details.json").write_text(json.dumps(local, indent=2, allow_nan=False) + "\n")
     report = {
         "scope": "Preliminary real-data proxy exploration, not final personalization evaluation",
-        "selection": f"First {args.participants} CSV filenames in lexicographic order; not a representative sample",
-        "participants": len(files), "valid_window_pairs": len(table),
+        "selection": ("All available participant CSV files" if len(files) == len(available_files)
+                      else f"First {len(files)} CSV filenames in lexicographic order; not a representative sample"),
+        "available_participant_files": len(available_files),
+        "participants": coverage["evaluated_participants"], "coverage": coverage,
+        "valid_window_pairs": len(table),
         "features": FEATURE_NAMES, "window_config": asdict(config),
         "cross_validation": {"method": "GroupKFold by participant", "folds": args.folds,
                              "hyperparameter_search": False},
@@ -244,7 +276,9 @@ def main():
             package: importlib.metadata.version(package)
             for package in ["numpy", "pandas", "scikit-learn", "matplotlib"]}},
         "limitations": [
-            "12-user default subset; not all 342 participants and not representative.",
+            (f"All {len(files)} available source users selected; valid-window rules still filter observations."
+             if len(files) == len(available_files)
+             else f"Only {len(files)} of {len(available_files)} source users selected; not representative."),
             "Proxy labels do not validate unwanted use, addiction or benefit to users.",
             "Session/gap policies are explicit research assumptions and require sensitivity checks.",
             "Quality-window selection is retrospective, not verified live collection coverage.",

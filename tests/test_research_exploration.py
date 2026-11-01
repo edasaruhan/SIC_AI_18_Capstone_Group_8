@@ -6,7 +6,9 @@ import pytest
 
 from src.models.features import prepare_features
 from src.models.research_data import RESEARCH_FEATURES, WindowConfig, research_windows
-from src.models.real_data_exploration import compare_models, fit_proxy_thresholds, proxy_labels
+from src.models.real_data_exploration import (
+    compare_models, coverage_summary, fit_proxy_thresholds, proxy_labels,
+)
 
 
 BASE = int(pd.Timestamp("2016-06-01", tz="UTC").timestamp() * 1000)
@@ -129,3 +131,48 @@ def test_research_comparison_keeps_each_user_in_one_holdout_fold():
 def test_invalid_quality_settings(gap, session):
     with pytest.raises(ValueError):
         WindowConfig(gap_minutes=gap, max_session_minutes=session)
+
+
+def test_coverage_distinguishes_no_pairs_from_invalid_windows():
+    keys = ("raw_rows", "excluded_timestamp_rows", "candidate_windows", "valid_windows",
+            "paired_windows", "recording_gaps", "long_or_zero_sessions", "interrupted_sessions",
+            "unclosed_sessions", "ambiguous_screen_timestamps", "ambiguous_app_timestamps")
+    excluded = dict.fromkeys(keys, 0)
+    excluded.update(raw_rows=20, candidate_windows=2, valid_windows=1)
+    included = dict.fromkeys(keys, 0)
+    included.update(raw_rows=80, candidate_windows=6, valid_windows=5, paired_windows=4)
+    summary = coverage_summary([excluded, included])
+    assert summary["selected_participants"] == 2
+    assert summary["evaluated_participants"] == 1
+    assert summary["excluded_participants_no_valid_pairs"] == 1
+    assert summary["totals"]["raw_rows"] == 100
+    assert summary["totals"]["invalid_windows"] == 2
+    assert summary["totals"]["valid_windows_without_valid_next_window"] == 2
+
+
+def test_cli_reports_all_selected_users_without_stale_twelve_user_claim(tmp_path, monkeypatch):
+    import json
+    import sys
+    from src.models import real_data_exploration as exploration
+
+    source = tmp_path / "source" / "data"
+    source.mkdir(parents=True)
+    for name in ("u1", "u2", "u3"):
+        pd.DataFrame(example_rows()).to_csv(source / f"{name}.csv", index=False)
+    output, workdir = tmp_path / "report", tmp_path / "derived"
+    monkeypatch.setattr(sys, "argv", [
+        "exploration", "--dataset", str(source.parent), "--participants", "3",
+        "--folds", "3", "--output", str(output), "--workdir", str(workdir),
+    ])
+    monkeypatch.setattr(exploration, "plot_results", lambda *_: None)
+    exploration.main()
+    report = json.loads((output / "results.json").read_text())
+    details = json.loads((workdir / "local_details.json").read_text())
+    assert report["selection"] == "All available participant CSV files"
+    assert report["available_participant_files"] == report["participants"] == 3
+    assert report["coverage"]["excluded_participants_no_valid_pairs"] == 0
+    assert report["valid_window_pairs"] == 15
+    assert "12-user" not in json.dumps(report)
+    assert len(details["source_manifest"]) == 3
+    assert details["excluded_participants"] == []
+    assert (workdir / "oof_predictions.csv").is_file()

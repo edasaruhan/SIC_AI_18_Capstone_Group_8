@@ -20,6 +20,9 @@ htmlcov/
 models/**
 !models/.gitkeep
 
+# Yerel ödev taslağı
+/reports/model_exploration_submission.txt
+
 # Yerel veri tabanları ve ortam sırları
 *.db
 *.db-*
