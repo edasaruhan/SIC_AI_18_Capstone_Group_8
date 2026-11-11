@@ -1,5 +1,7 @@
 # Geliştirme notları
 
+**11 Kasım 2026 uygulama notu:** Aşağıdaki maddeler hedef protokoldür. Mevcut v1 genel-model araştırmasının uygulanan kararları ve sapmaları [model geliştirme planında](model_development_plan.md) ve [deney kaydında](../reports/model_refinement_dataset_v1/results.json) tutulur. V1 sabit kaynak proxy eşiklerini korur; uzun oturum etiketi pencere dışına uzanabilir. Bu nedenle kronolojik kişiselleştirmede yalnızca bir pencere boşluğunu yeterli kabul etmeden sonuç/etiket erişilebilirlik sınırı netleştirilmelidir. SHAP, kişiselleştirme ve mobil doğrulama henüz yapılmadı.
+
 Bu dosya [literatür/veri/teknoloji incelemesi](literature_data_technology_review.pdf) ve [uygulama planındaki](concept_note_implementation_plan.pdf) geliştirmeyi etkileyen kararları özetler. Aşağıdakiler planlanan yöntemdir; uygulanmış veya doğrulanmış sonuçlar değildir.
 
 ## Veri ve tahmin hedefi

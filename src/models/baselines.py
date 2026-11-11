@@ -44,7 +44,7 @@ def _target(y, X: pd.DataFrame, *, both_classes: bool) -> np.ndarray:
             raise ValueError("y must contain only observed numeric labels 0 and 1")
     labels = labels.astype(int)
     if both_classes and len(np.unique(labels)) != 2:
-        raise ValueError("Logistic Regression requires both target classes (0 and 1)")
+        raise ValueError("Training requires both target classes (0 and 1)")
     return labels
 
 

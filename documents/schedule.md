@@ -1,5 +1,7 @@
 # Takvim
 
+**11 Kasım 2026 gerçekleşme notu:** V1 üzerinde genel model karşılaştırması tamamlandı; kişiselleştirme, SHAP, nihai model seçimi ve mobil dışa aktarım tamamlanmadı. Aşağıdaki tarihler özgün hedeflerdir; geçmiş kontrol noktaları tamamlanmış iş anlamına gelmez. Güncel kanıtlar [model geliştirme planındadır](model_development_plan.md).
+
 **Hedef teslim/final sunum: 27 Kasım 2026.**
 
 Aşağıdaki tarihler [uygulama planındaki](concept_note_implementation_plan.pdf) özgün takvimdir. 29 Ekim 2026 itibarıyla uygulamaya başlanmamıştır; tarihlerin geçmiş olması işlerin tamamlandığını göstermez. Bu dosya yeni bir takvim kararı içermez; başlangıç işlerinin durumu ekip ilerledikçe güncellenir.

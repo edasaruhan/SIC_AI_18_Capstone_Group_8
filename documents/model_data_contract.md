@@ -1,5 +1,7 @@
 # Model veri sözleşmesi — zaman ve aday özellik taslağı
 
+**11 Kasım 2026 durum notu:** Bu belge ortak arayüz için taslaktır. Yeni araştırma, İsmail’in `dataset_v1` kaynak adlarını kullanır: `screen_s`, `sessions_started`, `longest_run_s`, `app_switches`, `prev_session_s`, `hour`, `dow`. `prev_session_s` ve saat alanları pencere başlangıcına aittir; aşağıdaki taslak alanlara sessizce eşlenmez. V1 sabit proxy eşikleriyle çalışılmıştır; uzun oturum etiketi pencere dışındaki bitişe bağlı olabilir. Bu farklar ve açık kararlar [güncel planda](model_development_plan.md) kayıtlıdır; taslak nihai veri sözleşmesi sayılmaz.
+
 **Durum:** Taslak; ortak veri şeması veya ekip tarafından onaylanmış entegrasyon sözleşmesi değildir.
 
 Bu belge [model planının](model_development_plan.md) Aşama 1'deki zaman ilişkisi ve aday özellik şeması işlerinin çıktısıdır. [Geliştirme notlarındaki](development_notes.md) tamamlanan pencere → sonraki pencere kuralını zaman örnekleriyle açıklar. Bölüm 7'deki alan adı, sıra, tip ve birimler model tarafı önerileridir; gerçek tablo veya Android ile henüz doğrulanmadı. Proxy eşikleri ve mobil çıktı formatı açık kalır.

@@ -4,7 +4,7 @@ Samsung ve Yeşilay Innovation Campus AI programı kapsamında geliştirilen Gru
 
 Yetişkin kullanıcıların Android telefon kullanım örüntülerini öğrenerek yaklaşan yoğun kullanım dönemlerini tahmin eden, kısa ve kapatılabilir hatırlatmalar sunan bir uygulama geliştirmeyi amaçlıyoruz. Temel araştırma sorusu, çok kullanıcılı veriden öğrenilen bilginin kişiselleştirmenin ilk günlerinde ne kadar fayda sağladığıdır.
 
-**Durum (29 Ekim 2026):** Proje planlama aşamasında; veri işleme, model eğitimi ve Android uygulaması henüz geliştirilmedi. Bu repo başlangıç çalışma yapısını içerir. **Hedef teslim/final sunum: 27 Kasım 2026.**
+**Durum (11 Kasım 2026):** Baseline kodları, önceki genel model deneyleri ve İsmail'in hazırladığı `dataset_v1` üzerinde model iyileştirme çalışması mevcut. Kişiselleştirme ve Android entegrasyonu henüz doğrulanmadı. Güncel iş, kanıtlar ve bağımlılıklar [model geliştirme planında](documents/model_development_plan.md) tutulur. **Hedef teslim/final sunum: 27 Kasım 2026.**
 
 ## Proje kapsamı
 
@@ -39,7 +39,7 @@ Proje farkındalık ve öz düzenlemeyi destekler; bağımlılık tanısı veya 
 └── .gitignore
 ```
 
-Klasörlerdeki `.gitkeep` dosyaları boş dizinlerin Git'te tutulmasını sağlar. Çalışan eğitim veya uygulama komutu henüz yoktur.
+Klasörlerdeki `.gitkeep` dosyaları boş dizinlerin Git'te tutulmasını sağlar. Python model kodları `src/models/`, paylaşılabilir toplu deney çıktıları `reports/` altındadır.
 
 ## Başlangıç
 
@@ -53,7 +53,18 @@ python -m pip install -r requirements.txt
 
 Windows PowerShell'de etkinleştirme komutu: `.venv\Scripts\Activate.ps1`.
 
-Bağımlılık listesi plandaki araçları içerir; doğrulanmış ve sürümleri sabitlenmiş bir çalışma ortamı henüz yoktur. İlk çalışan ortam doğrulandığında sürümler sabitlenecektir. Android kurulumu için [Android çalışma notuna](android/README.md) bakın.
+Bağımlılık listesi henüz kullanılmayan planlı araçları da içerir; tam bir ortam kilidi değildir. Kullanılan sürümler deneylerin `results.json` dosyalarında kayıtlıdır. macOS'te XGBoost için OpenMP çalışma zamanı da gerekir (`brew install libomp`). Android kurulumu için [Android çalışma notuna](android/README.md) bakın.
+
+Model kodunu ve testleri repo kökünde çalıştırın:
+
+```bash
+python -m pytest -q --tb=short
+python -m src.models.synthetic_demo
+# Yerel dataset_v1 paketi ve aynı sürümü üreten betik gereklidir:
+python -m src.models.refinement_exploration
+```
+
+Son komut `data/processed/dataset_v1/` altındaki tabloları ve `mpu_pipeline.py` dosyasını okur. Veriler, satır düzeyindeki tahminler ve `models/` altındaki Python model dosyaları Git dışında tutulur. Çalışma, sonraki pencerenin geçmişe dönük proxy etiketini tahmin eder; kullanıcı geri bildirimi veya mobil çalışma kanıtı değildir.
 
 1. [Görev dağılımında](documents/task_distribution.md) kendi sorumluluğunuzu ve ilk paralel işi inceleyin.
 2. Kodlamadan önce [geliştirme notlarındaki](documents/development_notes.md) veri, etiket ve değerlendirme kurallarını okuyun.

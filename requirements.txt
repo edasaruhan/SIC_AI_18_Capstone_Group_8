@@ -1,8 +1,9 @@
-# Başlangıç bağımlılıkları; ilk çalışan ortam doğrulandıktan sonra sürümler sabitlenecek.
+# Deneylerde kullanılan sürümler results.json ve model geliştirme planında kayıtlıdır.
+# Liste planlı araçları da içerir; tam bağımlılık kilidi değildir.
 pandas
 numpy
 scikit-learn
-xgboost
+xgboost==3.2.0
 shap
 matplotlib
 jupyter

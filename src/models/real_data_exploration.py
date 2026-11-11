@@ -154,7 +154,7 @@ def coverage_summary(diagnostics: list[dict]) -> dict:
     }
 
 
-def plot_results(predictions: pd.DataFrame, output: Path):
+def plot_results(predictions: pd.DataFrame, output: Path, *, subtitle=None):
     cache = Path(tempfile.gettempdir()) / "sic-exploration-cache"
     cache.mkdir(parents=True, exist_ok=True)
     os.environ.setdefault("MPLCONFIGDIR", str(cache / "matplotlib"))
@@ -164,8 +164,8 @@ def plot_results(predictions: pd.DataFrame, output: Path):
     import matplotlib.pyplot as plt
 
     names = list(predictions["model"].unique())
-    fig, axes = plt.subplots(1, len(names), figsize=(12, 3.8), constrained_layout=True)
-    for ax, name in zip(axes, names):
+    fig, axes = plt.subplots(1, len(names), figsize=(4 * len(names), 3.8), constrained_layout=True)
+    for ax, name in zip(np.atleast_1d(axes), names):
         group = predictions.loc[predictions["model"].eq(name)]
         matrix = confusion_matrix(group["y"], group["prediction"], labels=[0, 1])
         ax.imshow(matrix, cmap="Blues")
@@ -173,7 +173,7 @@ def plot_results(predictions: pd.DataFrame, output: Path):
             ax.text(j, i, str(value), ha="center", va="center",
                     color="white" if value > matrix.max() / 2 else "black")
         ax.set(xticks=[0, 1], yticks=[0, 1], xlabel="Predicted proxy", ylabel="Observed proxy", title=name)
-    fig.suptitle("Out-of-fold confusion matrices (training-fold proxy thresholds)")
+    fig.suptitle(subtitle or "Out-of-fold confusion matrices (training-fold proxy thresholds)")
     fig.savefig(output / "confusion_matrices.png", dpi=160)
     plt.close(fig)
     fig, axes = plt.subplots(1, 2, figsize=(11, 4), constrained_layout=True)
@@ -191,7 +191,7 @@ def plot_results(predictions: pd.DataFrame, output: Path):
         ax.legend(fontsize=8)
         ax.set_xlim(0, 1)
         ax.set_ylim(0, 1.02)
-    fig.suptitle("Preliminary proxy experiment; thresholds learned per training fold")
+    fig.suptitle(subtitle or "Preliminary proxy experiment; thresholds learned per training fold")
     fig.savefig(output / "roc_pr_curves.png", dpi=160)
     plt.close(fig)
 

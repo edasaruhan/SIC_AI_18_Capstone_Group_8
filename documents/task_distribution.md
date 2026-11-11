@@ -1,5 +1,7 @@
 # Görev dağılımı
 
+**11 Kasım 2026 durum notu:** İsmail’in hazırlanmış v1 tablosu alındı; Kaan’ın genel model çalışmaları mevcut. Aşağıdaki ilk paralel işler başlangıç planının kaydıdır. Tamamlanmış model işleri ve kalan ekip bağımlılıkları [model geliştirme planında](model_development_plan.md) izlenir; ana sorumluluklar değişmedi.
+
 Kaynak: Ekip tarafından paylaşılan görev tablosu ve [uygulama planındaki](concept_note_implementation_plan.pdf) görev matrisi (Tablo 5). Kişi numaraları, paylaşılan görev tablosundaki sıradır.
 
 ## Ana sorumluluklar
