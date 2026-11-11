@@ -64,7 +64,7 @@ python -m src.models.synthetic_demo
 python -m src.models.refinement_exploration
 ```
 
-Son komut `data/processed/dataset_v1/` altındaki tabloları ve `mpu_pipeline.py` dosyasını okur. Veriler, satır düzeyindeki tahminler ve `models/` altındaki Python model dosyaları Git dışında tutulur. Çalışma, sonraki pencerenin geçmişe dönük proxy etiketini tahmin eder; kullanıcı geri bildirimi veya mobil çalışma kanıtı değildir.
+Son komut `data/processed/dataset_v1/` altındaki tabloları ve İsmail Hakkı Sarıoğlan tarafından hazırlanan `src/data/mpu_pipeline.py` dosyasını okur. Veriler, satır düzeyindeki tahminler ve `models/` altındaki Python model dosyaları Git dışında tutulur. Çalışma, sonraki pencerenin geçmişe dönük proxy etiketini tahmin eder; kullanıcı geri bildirimi veya mobil çalışma kanıtı değildir.
 
 1. [Görev dağılımında](documents/task_distribution.md) kendi sorumluluğunuzu ve ilk paralel işi inceleyin.
 2. Kodlamadan önce [geliştirme notlarındaki](documents/development_notes.md) veri, etiket ve değerlendirme kurallarını okuyun.

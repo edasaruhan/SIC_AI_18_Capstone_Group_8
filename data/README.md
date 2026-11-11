@@ -16,6 +16,6 @@ Kaynak/sürüm, indirme tarihi, yeniden kullanım koşulları, temizleme kararla
 ## Mevcut yerel veriler
 
 - Ham dataset kullanıcının yerel kopyasında `src/data/mobile_phone_use/` altında; ayrı bir Git dışlama kuralıyla korunuyor.
-- İsmail'in gönderdiği hazırlanmış paket `data/processed/dataset_v1/` altında: `windows.csv.gz`, `participant_inventory.csv`, `summary.json`, `daily.csv.gz`, sütun açıklamaları ve kalite raporları. Aynı üretim izine sahip `mpu_pipeline.py` burada yalnızca yerel kaynak doğrulaması için korunuyor; ortak veri koduna taşınmadı.
+- İsmail'in gönderdiği hazırlanmış paket `data/processed/dataset_v1/` altında: `windows.csv.gz`, `participant_inventory.csv`, `summary.json`, `daily.csv.gz`, sütun açıklamaları ve kalite raporları. Üretici betik, İsmail Hakkı Sarıoğlan’ın kodu değiştirilmeden `src/data/mpu_pipeline.py` altında paylaşılır. Örnek üretim komutu: `python src/data/mpu_pipeline.py --root src/data/mobile_phone_use --out data/processed/dataset_v1 --jobs 4`. Bu komut çıktı dosyalarını yeniden yazar; mevcut deney paketini korumak için farklı bir `--out` klasörü seçin.
 - Yeni model deneyi, paketteki `usable_for_modeling` işaretine ve `target_ok` koşuluna uyar. Zaman alanı üretici betiğin yerel saate kaydırılmış epoch saniyesidir; UTC zaman damgası olarak yeniden adlandırılmaz.
 - Araştırma satır tahminleri/bölmeleri `data/processed/model_refinement_dataset_v1/` altında kalır. Paylaşılabilir toplu kanıtlar `reports/model_refinement_dataset_v1/` altındadır.

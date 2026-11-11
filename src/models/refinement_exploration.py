@@ -170,7 +170,7 @@ def compare_refinement(table, *, folds=3, seed=42, model_dir=None):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dataset", type=Path, default=Path("data/processed/dataset_v1"))
-    parser.add_argument("--pipeline", type=Path, default=Path("data/processed/dataset_v1/mpu_pipeline.py"))
+    parser.add_argument("--pipeline", type=Path, default=Path("src/data/mpu_pipeline.py"))
     parser.add_argument("--output", type=Path, default=Path("reports/model_refinement_dataset_v1"))
     parser.add_argument("--workdir", type=Path, default=Path("data/processed/model_refinement_dataset_v1"))
     parser.add_argument("--model-dir", type=Path, default=Path("models/refinement_dataset_v1"))
