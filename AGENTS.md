@@ -10,4 +10,5 @@
 - Bir görevi ancak gereken kod, test veya doğrulanmış çıktı mevcutsa tamamlandı olarak işaretle. İlerlemeyi tarihe veya çalışma süresine göre belirleme.
 - Veri ya da ekip çıktısı eksikse bağımlılığı kaydet; sorumluluk sınırları içindeki bağımsız işlerle devam et. Geçici varsayımları kesin karar gibi sunma.
 - Her çalışma sonunda `documents/model_development_plan.md` dosyasındaki mevcut işi, durumu, kanıtları, kararları ve sıradaki adımı güncelle; kullanıcıya tamamlanan işi ve doğrulama sonucunu özetle.
+- Public repo belgelerinde deney amacı, yöntem, doğrulanmış sonuçlar ve açık teknik işleri kısa tut. Rapor biçimlendirme, geçici taslaklar, kullanıcı onayları ve commit/push adımları gibi oturum ayrıntılarını ilerleme günlüğüne ekleme.
 - Commit ve push için kullanıcı onayı al; önceki bir işlemin onayını sonraki çalışmalara otomatik taşıma.

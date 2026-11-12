@@ -81,6 +81,7 @@ Son komut `data/processed/dataset_v1/` altındaki tabloları ve İsmail Hakkı S
 | [Literatür, veri ve teknoloji incelemesi](documents/literature_data_technology_review.pdf) | Araştırma dayanakları, veri sınırlılıkları ve teknoloji değerlendirmesi |
 | [Kavram notu ve uygulama planı](documents/concept_note_implementation_plan.pdf) | Güncel kapsam, mimari, deney protokolü, takvim ve görev matrisi |
 | [Veri hazırlama ve model araştırması](documents/data_preparation_model_exploration.pdf) | Veri hazırlama ve mevcut çevrimdışı model araştırması raporu |
+| [Model iyileştirme ve test](documents/model_refinement_test_submission.pdf) | V1 model karşılaştırması, doğrulamada ayar seçimi ve test sonuçları |
 | [İlk proje önerisi](documents/idea_proposal.pdf) | İlk fikir metni |
 | [İlk öneri sunumu](documents/idea_proposal_presentation.pdf) | İlk fikir sunumu |
 
