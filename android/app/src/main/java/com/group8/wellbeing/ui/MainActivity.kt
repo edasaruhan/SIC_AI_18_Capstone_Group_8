@@ -23,6 +23,7 @@ import com.group8.wellbeing.ui.theme.WellbeingTheme
 import com.group8.wellbeing.usage.AndroidUsageEventReader
 import com.group8.wellbeing.usage.NotificationPermissionChecker
 import com.group8.wellbeing.usage.UsageAccessChecker
+import com.group8.wellbeing.worker.WorkManagerCollectionScheduler
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -34,7 +35,8 @@ class MainActivity : ComponentActivity() {
             usageEventReader = AndroidUsageEventReader(applicationContext),
             localDataRepository = RoomWellbeingRepository(
                 WellbeingDatabase.getInstance(applicationContext)
-            )
+            ),
+            collectionScheduler = WorkManagerCollectionScheduler(applicationContext)
         )
     }
 

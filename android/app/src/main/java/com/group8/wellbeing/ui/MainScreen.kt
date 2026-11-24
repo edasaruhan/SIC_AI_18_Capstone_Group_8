@@ -324,6 +324,18 @@ private fun StatusTabContent(
             )
             HorizontalDivider(color = MaterialTheme.colorScheme.outline)
             StatusRow(
+                label = "Arka plan işi",
+                value = if (state.backgroundWorkScheduled) "Planlandı (15 dk)" else "Kapalı",
+                isPositive = state.backgroundWorkScheduled
+            )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+            StatusRow(
+                label = "Model durumu",
+                value = "Bağlı değil (kapalı)",
+                isPositive = false
+            )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+            StatusRow(
                 label = "Son başarılı kayıt",
                 value = state.lastCheckpointText,
                 isPositive = state.lastCheckpointText != "Henüz kayıt yok"

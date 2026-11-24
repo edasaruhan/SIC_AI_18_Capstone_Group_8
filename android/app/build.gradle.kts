@@ -14,7 +14,7 @@ android {
         minSdk = 28
         targetSdk = 37
         versionCode = 1
-        versionName = "0.6.0-m09-m13"
+        versionName = "0.7.0-m08-m12"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -55,6 +55,7 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
+    implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.kotlinx.coroutines.android)
     ksp(libs.androidx.room.compiler)
     testImplementation(libs.junit)

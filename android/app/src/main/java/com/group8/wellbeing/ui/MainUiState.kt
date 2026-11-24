@@ -72,6 +72,7 @@ data class MainUiState(
     val usagePermissionState: UsagePermissionState = UsagePermissionState.REQUIRED,
     val notificationPermissionState: NotificationPermissionState = NotificationPermissionState.NOT_REQUIRED,
     val pausedByUser: Boolean = false,
+    val backgroundWorkScheduled: Boolean = false,
     val showDeleteDialog: Boolean = false,
     val exportPreview: ExportPreviewUi? = null,
     val statusNotice: String = "Henüz kontrol yapılmadı.",

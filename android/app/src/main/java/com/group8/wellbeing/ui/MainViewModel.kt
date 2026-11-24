@@ -20,6 +20,7 @@ import com.group8.wellbeing.usage.NotificationPermissionState
 import com.group8.wellbeing.usage.UsageEventReader
 import com.group8.wellbeing.usage.UsagePermissionState
 import com.group8.wellbeing.usage.UsageQueryErrorCode
+import com.group8.wellbeing.worker.CollectionScheduler
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,7 +37,8 @@ class MainViewModel(
     private val usageEventReader: UsageEventReader? = null,
     private val localDataRepository: LocalDataRepository? = null,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
-    private val appVersion: String = "0.6.0-m09-m13",
+    private val collectionScheduler: CollectionScheduler? = null,
+    private val appVersion: String = "0.7.0-m08-m12",
     private val nowMsProvider: () -> Long = { System.currentTimeMillis() }
 ) : ViewModel() {
     private val mutableUiState = MutableStateFlow(MainUiState())
@@ -457,6 +459,11 @@ class MainViewModel(
             pausedByUser = snapshot.pausedByUser,
             errorMessage = errorMessage
         )
+        if (resolved.canQueryUsageData) {
+            collectionScheduler?.schedulePeriodicCollection()
+        } else {
+            collectionScheduler?.cancelPeriodicCollection()
+        }
         val current = mutableUiState.value
         mutableUiState.value = current.copy(
             darkThemeEnabled = snapshot.darkThemeEnabled,
@@ -471,6 +478,7 @@ class MainViewModel(
             usagePermissionState = lastUsagePermission,
             notificationPermissionState = lastNotificationPermission,
             pausedByUser = snapshot.pausedByUser,
+            backgroundWorkScheduled = collectionScheduler?.isScheduled() ?: false,
             showDeleteDialog = showDeleteDialog,
             exportPreview = exportPreview,
             statusNotice = notice ?: current.statusNotice,
@@ -521,14 +529,16 @@ class MainViewModel(
     class Factory(
         private val controlStore: ControlStore,
         private val usageEventReader: UsageEventReader,
-        private val localDataRepository: LocalDataRepository
+        private val localDataRepository: LocalDataRepository,
+        private val collectionScheduler: CollectionScheduler
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             return MainViewModel(
                 controlStore = controlStore,
                 usageEventReader = usageEventReader,
-                localDataRepository = localDataRepository
+                localDataRepository = localDataRepository,
+                collectionScheduler = collectionScheduler
             ) as T
         }
     }
