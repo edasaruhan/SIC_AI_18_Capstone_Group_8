@@ -117,6 +117,7 @@ class MainActivity : ComponentActivity() {
                         onDismissExportPreview = { viewModel.dismissExportPreview() },
                         onConfirmExportZip = { launchExportDocumentPicker() },
                         onOpenUsageAccessSettings = { openUsageAccessSettings() },
+                        onOpenAppDetailsSettings = { openAppDetailsSettings() },
                         onRequestNotificationPermission = { requestNotificationPermission() },
                         onPauseCollection = { viewModel.pauseCollection() },
                         onResumeCollection = { viewModel.resumeCollection() },
@@ -162,6 +163,13 @@ class MainActivity : ComponentActivity() {
         } else {
             startActivity(fallbackIntent)
         }
+    }
+
+    private fun openAppDetailsSettings() {
+        val detailsIntent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+            data = Uri.parse("package:$packageName")
+        }
+        startActivity(detailsIntent)
     }
 
     private fun requestNotificationPermission() {

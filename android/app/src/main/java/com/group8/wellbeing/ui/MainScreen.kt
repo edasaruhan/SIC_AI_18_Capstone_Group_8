@@ -46,6 +46,7 @@ fun MainScreen(
     onDismissExportPreview: () -> Unit,
     onConfirmExportZip: () -> Unit,
     onOpenUsageAccessSettings: () -> Unit,
+    onOpenAppDetailsSettings: () -> Unit,
     onRequestNotificationPermission: () -> Unit,
     onPauseCollection: () -> Unit,
     onResumeCollection: () -> Unit,
@@ -100,6 +101,7 @@ fun MainScreen(
                 MainTab.STATUS -> StatusTabContent(
                     state = state,
                     onOpenUsageAccessSettings = onOpenUsageAccessSettings,
+                    onOpenAppDetailsSettings = onOpenAppDetailsSettings,
                     onRequestNotificationPermission = onRequestNotificationPermission,
                     onPauseCollection = onPauseCollection,
                     onResumeCollection = onResumeCollection,
@@ -248,6 +250,7 @@ private fun TabButton(
 private fun StatusTabContent(
     state: MainUiState,
     onOpenUsageAccessSettings: () -> Unit,
+    onOpenAppDetailsSettings: () -> Unit,
     onRequestNotificationPermission: () -> Unit,
     onPauseCollection: () -> Unit,
     onResumeCollection: () -> Unit,
@@ -373,6 +376,31 @@ private fun StatusTabContent(
             shape = RoundedCornerShape(12.dp)
         ) {
             Text(text = "Kullanım Erişimi Ayarlarını Aç")
+        }
+
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant
+        ) {
+            Column(
+                modifier = Modifier.padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = "Android 13+ cihazlarda APK kurulumunda izin anahtarı kilitliyse, önce Uygulama Bilgileri ekranından \"Kısıtlı ayarlara izin ver\" seçeneğini açın.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                OutlinedButton(
+                    onClick = onOpenAppDetailsSettings,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                ) {
+                    Text(text = "Uygulama Bilgilerini Aç")
+                }
+            }
         }
     }
 

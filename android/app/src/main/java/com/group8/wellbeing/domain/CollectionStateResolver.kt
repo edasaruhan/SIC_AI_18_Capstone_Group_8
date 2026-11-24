@@ -55,7 +55,7 @@ object CollectionStateResolver {
         return ResolvedCollectionState(
             status = CollectionStatus.ACTIVE,
             canQueryUsageData = true,
-            nextStepMessage = "Katılım onayı ve kullanım erişimi aktif. Olay İnceleyici sekmesinden son kullanım kayıtlarını okuyabilirsiniz."
+            nextStepMessage = "Katılım onayı ve kullanım erişimi aktif. Arka plan toplama 15 dakikada bir çalışır; Olaylar ve Dönemler sekmelerinden kayıtlarınızı inceleyebilirsiniz."
         )
     }
 }
