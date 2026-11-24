@@ -2,6 +2,7 @@ package com.group8.wellbeing.data
 
 object AppConfig {
     const val APP_SCHEMA_VERSION: Int = 1
+    const val CONSENT_VERSION: String = "consent-v1"
     const val FEATURE_SCHEMA_VERSION: String = "v1"
     const val MIN_API_LEVEL: Int = 28
     const val WINDOW_DURATION_MS: Long = 1_800_000L
