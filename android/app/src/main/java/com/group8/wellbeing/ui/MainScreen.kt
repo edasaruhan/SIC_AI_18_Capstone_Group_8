@@ -266,6 +266,18 @@ private fun StatusTabContent(
                 value = notificationLabel,
                 isPositive = state.notificationPermissionState != NotificationPermissionState.DENIED
             )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+            StatusRow(
+                label = "Yerel kayıt (Room)",
+                value = "${state.storedRawEventCount} olay · ${state.storedBatchCount} sorgu",
+                isPositive = state.storedRawEventCount > 0
+            )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+            StatusRow(
+                label = "Son başarılı kayıt",
+                value = state.lastCheckpointText,
+                isPositive = state.lastCheckpointText != "Henüz kayıt yok"
+            )
         }
     }
 
@@ -492,6 +504,11 @@ private fun InspectorTabContent(
                 StatusRow(
                     label = "Normalize / Ham",
                     value = "${summary.normalizedCount} / ${summary.rawScannedCount}",
+                    isPositive = summary.errorCode == UsageQueryErrorCode.NONE
+                )
+                StatusRow(
+                    label = "Yeni / Yinelenen",
+                    value = "+${summary.insertedCount} yeni · ${summary.duplicateSkippedCount} atlandı",
                     isPositive = summary.errorCode == UsageQueryErrorCode.NONE
                 )
                 if (summary.errorCode != UsageQueryErrorCode.NONE) {

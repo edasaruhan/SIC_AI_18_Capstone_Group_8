@@ -16,7 +16,9 @@ import androidx.activity.viewModels
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import com.group8.wellbeing.data.RoomWellbeingRepository
 import com.group8.wellbeing.data.SharedPrefsControlStore
+import com.group8.wellbeing.data.local.WellbeingDatabase
 import com.group8.wellbeing.ui.theme.WellbeingTheme
 import com.group8.wellbeing.usage.AndroidUsageEventReader
 import com.group8.wellbeing.usage.NotificationPermissionChecker
@@ -26,7 +28,10 @@ class MainActivity : ComponentActivity() {
     private val viewModel: MainViewModel by viewModels {
         MainViewModel.Factory(
             controlStore = SharedPrefsControlStore(applicationContext),
-            usageEventReader = AndroidUsageEventReader(applicationContext)
+            usageEventReader = AndroidUsageEventReader(applicationContext),
+            localDataRepository = RoomWellbeingRepository(
+                WellbeingDatabase.getInstance(applicationContext)
+            )
         )
     }
 

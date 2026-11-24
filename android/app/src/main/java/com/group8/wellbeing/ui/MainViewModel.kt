@@ -2,18 +2,24 @@ package com.group8.wellbeing.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
 import com.group8.wellbeing.data.AppConfig
 import com.group8.wellbeing.data.ControlSnapshot
 import com.group8.wellbeing.data.ControlStore
+import com.group8.wellbeing.data.LocalDataRepository
+import com.group8.wellbeing.data.StorageStats
 import com.group8.wellbeing.domain.CollectionStateResolver
 import com.group8.wellbeing.usage.NormalizedEventType
 import com.group8.wellbeing.usage.NotificationPermissionState
 import com.group8.wellbeing.usage.UsageEventReader
 import com.group8.wellbeing.usage.UsagePermissionState
 import com.group8.wellbeing.usage.UsageQueryErrorCode
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -21,6 +27,8 @@ import java.util.Locale
 class MainViewModel(
     private val controlStore: ControlStore,
     private val usageEventReader: UsageEventReader? = null,
+    private val localDataRepository: LocalDataRepository? = null,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val nowMsProvider: () -> Long = { System.currentTimeMillis() }
 ) : ViewModel() {
     private val mutableUiState = MutableStateFlow(MainUiState())
@@ -29,6 +37,7 @@ class MainViewModel(
     private var lastUsagePermission: UsagePermissionState = UsagePermissionState.REQUIRED
     private var lastNotificationPermission: NotificationPermissionState = NotificationPermissionState.NOT_REQUIRED
     private var errorMessage: String? = null
+    private var latestStats: StorageStats = StorageStats()
 
     fun syncPermissions(
         usagePermission: UsagePermissionState,
@@ -42,6 +51,7 @@ class MainViewModel(
             controlStore.read()
         }
         publish(snapshot)
+        refreshStorageStats(snapshot)
     }
 
     fun toggleTheme() {
@@ -67,6 +77,7 @@ class MainViewModel(
             snapshot = snapshot,
             notice = "Katılım onayınız kaydedildi (${AppConfig.CONSENT_VERSION})."
         )
+        refreshStorageStats(snapshot)
     }
 
     fun declineConsent() {
@@ -121,10 +132,14 @@ class MainViewModel(
     fun confirmDeleteAllLocalData() {
         errorMessage = null
         val snapshot = controlStore.deleteAllLocalData()
+        latestStats = StorageStats()
+        viewModelScope.launch(ioDispatcher) {
+            localDataRepository?.clearAllLocalData()
+        }
         publish(
             snapshot = snapshot,
             showDeleteDialog = false,
-            notice = "Yerel kayıtlar, katılım onayı ve bekleyen bildirimler temizlendi. Yeni yerel kimlik oluşturuldu; daha önce dışa aktardığınız dosyalar otomatik silinmez.",
+            notice = "Yerel veritabanı, katılım onayı ve bekleyen bildirimler temizlendi. Yeni yerel kimlik oluşturuldu; daha önce dışa aktardığınız dosyalar otomatik silinmez.",
             clearInspector = true
         )
     }
@@ -150,7 +165,7 @@ class MainViewModel(
         val nextCount = mutableUiState.value.manualCheckCount + 1
         val timeText = formatTime(nowMsProvider())
         val queryNote = if (resolved.canQueryUsageData) {
-            "Yetki ve onay uygun. Olay İnceleyici üzerinden okuma yapabilirsiniz."
+            "Yetki ve onay uygun. Olay İnceleyici üzerinden okuma ve yerel kayıt yapabilirsiniz."
         } else {
             "Veri sorgusu kapalı (${resolved.status.name})."
         }
@@ -159,6 +174,7 @@ class MainViewModel(
             notice = "Kontrol #$nextCount ($timeText): $queryNote",
             manualCheckCount = nextCount
         )
+        refreshStorageStats(snapshot)
     }
 
     fun queryRecentEvents(
@@ -180,8 +196,8 @@ class MainViewModel(
             errorMessage = errorMessage
         )
         val nowMs = nowMsProvider()
-        val lookbackMs = mutableUiState.value.selectedLookbackMinutes * 60_000L
-        val startMs = nowMs - lookbackMs
+        val lookbackMinutes = mutableUiState.value.selectedLookbackMinutes
+        val startMs = nowMs - lookbackMinutes * 60_000L
 
         if (!resolved.canQueryUsageData) {
             val blockedCode = when {
@@ -194,6 +210,8 @@ class MainViewModel(
                 collectedAtText = formatTime(nowMs),
                 rawScannedCount = 0,
                 normalizedCount = 0,
+                insertedCount = 0,
+                duplicateSkippedCount = 0,
                 errorCode = blockedCode,
                 errorDetail = resolved.nextStepMessage,
                 countsByType = emptyMap()
@@ -208,52 +226,76 @@ class MainViewModel(
         }
 
         val reader = usageEventReader ?: return
-        val result = reader.queryEvents(
-            startMs = startMs,
-            endMs = nowMs,
-            collectedAtMs = nowMs
-        )
-        val counts = result.events.groupingBy { it.eventType }.eachCount()
-        val summary = QuerySummaryUi(
-            rangeText = "${formatTime(result.queriedStartMs)} - ${formatTime(result.queriedEndMs)}",
-            collectedAtText = formatTime(result.collectedAtMs),
-            rawScannedCount = result.rawScannedCount,
-            normalizedCount = result.events.size,
-            errorCode = result.errorCode,
-            errorDetail = result.errorDetail,
-            countsByType = counts
-        )
-        val items = result.events.map { event ->
-            val detail = when (event.eventType) {
-                NormalizedEventType.APP_FOREGROUND -> {
-                    val pkg = event.packageName ?: "Bilinmeyen paket"
-                    val shortClass = event.className?.substringAfterLast('.')
-                    if (shortClass != null) "$pkg · $shortClass" else pkg
-                }
-                NormalizedEventType.SCREEN_INTERACTIVE -> "Ekran aktifleşti (Interactive)"
-                NormalizedEventType.KEYGUARD_HIDDEN -> "Kilit ekranı gizlendi (Unlocked adayı)"
-                NormalizedEventType.KEYGUARD_SHOWN -> "Kilit ekranı gösterildi"
-                NormalizedEventType.SCREEN_NON_INTERACTIVE -> "Ekran kapandı (Off adayı)"
+        viewModelScope.launch(ioDispatcher) {
+            val result = reader.queryEvents(
+                startMs = startMs,
+                endMs = nowMs,
+                collectedAtMs = nowMs
+            )
+            val persistence = localDataRepository?.persistCollectionBatch(
+                participantId = snapshot.participantId,
+                consentVersion = snapshot.consentVersion,
+                consentTimeMs = snapshot.consentAcceptedAtMs,
+                collectionEnabled = resolved.canQueryUsageData,
+                batch = result
+            )
+            if (persistence != null) {
+                latestStats = persistence.stats
             }
-            InspectedEventUi(
-                timeText = formatTimeWithMillis(event.timestampMs),
-                eventType = event.eventType,
-                detailText = detail,
-                packageToken = event.packageToken,
-                isNonAppPackage = event.isNonAppPackage
+            val insertedCount = persistence?.insertedEventCount ?: result.events.size
+            val duplicateSkippedCount = persistence?.duplicateSkippedCount ?: 0
+            val counts = result.events.groupingBy { it.eventType }.eachCount()
+            val summary = QuerySummaryUi(
+                rangeText = "${formatTime(result.queriedStartMs)} - ${formatTime(result.queriedEndMs)}",
+                collectedAtText = formatTime(result.collectedAtMs),
+                rawScannedCount = result.rawScannedCount,
+                normalizedCount = result.events.size,
+                insertedCount = insertedCount,
+                duplicateSkippedCount = duplicateSkippedCount,
+                errorCode = result.errorCode,
+                errorDetail = result.errorDetail,
+                countsByType = counts
+            )
+            val items = result.events.map { event ->
+                val detail = when (event.eventType) {
+                    NormalizedEventType.APP_FOREGROUND -> {
+                        val pkg = event.packageName ?: "Bilinmeyen paket"
+                        val shortClass = event.className?.substringAfterLast('.')
+                        if (shortClass != null) "$pkg · $shortClass" else pkg
+                    }
+                    NormalizedEventType.SCREEN_INTERACTIVE -> "Ekran aktifleşti (Interactive)"
+                    NormalizedEventType.KEYGUARD_HIDDEN -> "Kilit ekranı gizlendi (Unlocked adayı)"
+                    NormalizedEventType.KEYGUARD_SHOWN -> "Kilit ekranı gösterildi"
+                    NormalizedEventType.SCREEN_NON_INTERACTIVE -> "Ekran kapandı (Off adayı)"
+                }
+                InspectedEventUi(
+                    timeText = formatTimeWithMillis(event.timestampMs),
+                    eventType = event.eventType,
+                    detailText = detail,
+                    packageToken = event.packageToken,
+                    isNonAppPackage = event.isNonAppPackage
+                )
+            }
+            val noticeText = if (result.errorCode == UsageQueryErrorCode.NONE) {
+                "Son $lookbackMinutes dk: ${result.events.size} olay okundu ($insertedCount yeni, $duplicateSkippedCount yinelenen atlandı)."
+            } else {
+                "Sorgu uyarısı (${result.errorCode.name}): ${result.errorDetail ?: "Kayıt alınamadı."}"
+            }
+            publish(
+                snapshot = snapshot,
+                notice = noticeText,
+                querySummary = summary,
+                inspectedEvents = items
             )
         }
-        val noticeText = if (result.errorCode == UsageQueryErrorCode.NONE) {
-            "Son ${mutableUiState.value.selectedLookbackMinutes} dakikada ${result.events.size} normalize olay okundu."
-        } else {
-            "Sorgu uyarısı (${result.errorCode.name}): ${result.errorDetail ?: "Kayıt alınamadı."}"
+    }
+
+    private fun refreshStorageStats(snapshot: ControlSnapshot) {
+        val repository = localDataRepository ?: return
+        viewModelScope.launch(ioDispatcher) {
+            latestStats = repository.readStorageStats(snapshot.participantId)
+            publish(controlStore.read())
         }
-        publish(
-            snapshot = snapshot,
-            notice = noticeText,
-            querySummary = summary,
-            inspectedEvents = items
-        )
     }
 
     private fun publish(
@@ -289,6 +331,9 @@ class MainViewModel(
             showDeleteDialog = showDeleteDialog,
             statusNotice = notice ?: current.statusNotice,
             manualCheckCount = manualCheckCount,
+            storedRawEventCount = latestStats.storedRawEventCount,
+            storedBatchCount = latestStats.storedBatchCount,
+            lastCheckpointText = latestStats.lastCheckpointMs?.let { formatDateTime(it) } ?: "Henüz kayıt yok",
             lastQuerySummary = if (clearInspector) null else querySummary,
             inspectedEvents = if (clearInspector) emptyList() else inspectedEvents
         )
@@ -311,11 +356,16 @@ class MainViewModel(
 
     class Factory(
         private val controlStore: ControlStore,
-        private val usageEventReader: UsageEventReader
+        private val usageEventReader: UsageEventReader,
+        private val localDataRepository: LocalDataRepository
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return MainViewModel(controlStore, usageEventReader) as T
+            return MainViewModel(
+                controlStore = controlStore,
+                usageEventReader = usageEventReader,
+                localDataRepository = localDataRepository
+            ) as T
         }
     }
 }

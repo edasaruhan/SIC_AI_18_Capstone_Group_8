@@ -24,6 +24,8 @@ data class QuerySummaryUi(
     val collectedAtText: String,
     val rawScannedCount: Int,
     val normalizedCount: Int,
+    val insertedCount: Int,
+    val duplicateSkippedCount: Int,
     val errorCode: UsageQueryErrorCode,
     val errorDetail: String?,
     val countsByType: Map<NormalizedEventType, Int>
@@ -47,6 +49,9 @@ data class MainUiState(
     val showDeleteDialog: Boolean = false,
     val statusNotice: String = "Henüz kontrol yapılmadı.",
     val manualCheckCount: Int = 0,
+    val storedRawEventCount: Int = 0,
+    val storedBatchCount: Int = 0,
+    val lastCheckpointText: String = "Henüz kayıt yok",
     val selectedLookbackMinutes: Int = 30,
     val lastQuerySummary: QuerySummaryUi? = null,
     val inspectedEvents: List<InspectedEventUi> = emptyList()
