@@ -20,7 +20,7 @@ object CollectionStateResolver {
             return ResolvedCollectionState(
                 status = CollectionStatus.CONSENT_PENDING,
                 canQueryUsageData = false,
-                nextStepMessage = "Veri toplamaya başlamak için bilgilendirilmiş onam vermeniz gerekir."
+                nextStepMessage = "Veri toplamaya başlamak için önce katılım onayınızı vermeniz gerekiyor."
             )
         }
         if (errorMessage != null) {
@@ -35,13 +35,13 @@ object CollectionStateResolver {
                 ResolvedCollectionState(
                     status = CollectionStatus.ACCESS_REVOKED,
                     canQueryUsageData = false,
-                    nextStepMessage = "Sistem kullanım erişimi kapatılmış. Eksik dönem sıfır kullanım sayılmaz; devam etmek için ayarlardan izni yeniden açın."
+                    nextStepMessage = "Sistem ayarlarından kullanım erişimi kapatılmış. Eksik kalan süre sıfır kullanım sayılmaz; devam etmek için izni yeniden açabilirsiniz."
                 )
             } else {
                 ResolvedCollectionState(
                     status = CollectionStatus.PERMISSION_REQUIRED,
                     canQueryUsageData = false,
-                    nextStepMessage = "Sistem ayarlarından Kullanım Erişimi iznini verip uygulamaya dönün."
+                    nextStepMessage = "Aşağıdaki butonla sistem ayarlarını açıp Kullanım Erişimi iznini verdikten sonra uygulamaya dönün."
                 )
             }
         }
@@ -49,13 +49,13 @@ object CollectionStateResolver {
             return ResolvedCollectionState(
                 status = CollectionStatus.PAUSED_BY_USER,
                 canQueryUsageData = false,
-                nextStepMessage = "Toplama duraklatıldı. Yeniden başlattığınızda duraklatılan dönem geriye dönük toplanmaz."
+                nextStepMessage = "Veri toplama şu an duraklatıldı. Devam ettiğinizde aradaki süre geriye dönük toplanmaz."
             )
         }
         return ResolvedCollectionState(
             status = CollectionStatus.ACTIVE,
             canQueryUsageData = true,
-            nextStepMessage = "Onam ve kullanım erişimi hazır. M03 ile manuel olay okuması etkinleştirilecektir."
+            nextStepMessage = "Katılım onayı ve kullanım erişimi aktif. Olay İnceleyici sekmesinden son kullanım kayıtlarını okuyabilirsiniz."
         )
     }
 }

@@ -13,16 +13,21 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import com.group8.wellbeing.data.SharedPrefsControlStore
 import com.group8.wellbeing.ui.theme.WellbeingTheme
+import com.group8.wellbeing.usage.AndroidUsageEventReader
 import com.group8.wellbeing.usage.NotificationPermissionChecker
 import com.group8.wellbeing.usage.UsageAccessChecker
 
 class MainActivity : ComponentActivity() {
     private val viewModel: MainViewModel by viewModels {
-        MainViewModel.Factory(SharedPrefsControlStore(applicationContext))
+        MainViewModel.Factory(
+            controlStore = SharedPrefsControlStore(applicationContext),
+            usageEventReader = AndroidUsageEventReader(applicationContext)
+        )
     }
 
     private val notificationPermissionLauncher = registerForActivityResult(
@@ -33,23 +38,40 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT),
-            navigationBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
-        )
         refreshPermissions()
         setContent {
-            WellbeingTheme {
-                val state by viewModel.uiState.collectAsState()
+            val state by viewModel.uiState.collectAsState()
+            LaunchedEffect(state.darkThemeEnabled) {
+                val style = if (state.darkThemeEnabled) {
+                    SystemBarStyle.dark(Color.TRANSPARENT)
+                } else {
+                    SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
+                }
+                enableEdgeToEdge(
+                    statusBarStyle = style,
+                    navigationBarStyle = style
+                )
+            }
+            WellbeingTheme(darkTheme = state.darkThemeEnabled) {
                 if (!state.consentAccepted) {
                     ConsentScreen(
                         state = state,
+                        onToggleTheme = { viewModel.toggleTheme() },
                         onAcceptConsent = { viewModel.acceptConsent() },
                         onDeclineConsent = { viewModel.declineConsent() }
                     )
                 } else {
                     MainScreen(
                         state = state,
+                        onToggleTheme = { viewModel.toggleTheme() },
+                        onSelectTab = { viewModel.selectTab(it) },
+                        onSelectLookbackMinutes = { viewModel.selectLookbackMinutes(it) },
+                        onQueryRecentEvents = {
+                            viewModel.queryRecentEvents(
+                                usagePermission = UsageAccessChecker.check(this),
+                                notificationPermission = NotificationPermissionChecker.check(this)
+                            )
+                        },
                         onOpenUsageAccessSettings = { openUsageAccessSettings() },
                         onRequestNotificationPermission = { requestNotificationPermission() },
                         onPauseCollection = { viewModel.pauseCollection() },

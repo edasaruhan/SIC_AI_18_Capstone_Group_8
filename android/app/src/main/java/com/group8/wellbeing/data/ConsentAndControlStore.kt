@@ -13,7 +13,8 @@ data class ControlSnapshot(
     val pausedByUser: Boolean,
     val pausedAtMs: Long?,
     val resumedAtMs: Long?,
-    val backfillPausedPeriod: Boolean
+    val backfillPausedPeriod: Boolean,
+    val darkThemeEnabled: Boolean
 ) {
     val isConsentAccepted: Boolean
         get() = consentVersion != null && consentAcceptedAtMs != null && !consentDeclined
@@ -26,6 +27,7 @@ interface ControlStore {
     fun markUsagePermissionSeenGranted(): ControlSnapshot
     fun pauseCollection(pausedAtMs: Long): ControlSnapshot
     fun resumeCollection(resumedAtMs: Long, backfillPausedPeriod: Boolean = false): ControlSnapshot
+    fun setDarkThemeEnabled(enabled: Boolean): ControlSnapshot
     fun deleteAllLocalData(): ControlSnapshot
 }
 
@@ -60,7 +62,8 @@ class SharedPrefsControlStore(context: Context) : ControlStore {
             pausedByUser = prefs.getBoolean(KEY_PAUSED_BY_USER, false),
             pausedAtMs = pausedAt,
             resumedAtMs = resumedAt,
-            backfillPausedPeriod = prefs.getBoolean(KEY_BACKFILL_PAUSED, false)
+            backfillPausedPeriod = prefs.getBoolean(KEY_BACKFILL_PAUSED, false),
+            darkThemeEnabled = prefs.getBoolean(KEY_DARK_THEME, true)
         )
     }
 
@@ -109,14 +112,21 @@ class SharedPrefsControlStore(context: Context) : ControlStore {
         return read()
     }
 
+    override fun setDarkThemeEnabled(enabled: Boolean): ControlSnapshot {
+        prefs.edit().putBoolean(KEY_DARK_THEME, enabled).apply()
+        return read()
+    }
+
     override fun deleteAllLocalData(): ControlSnapshot {
         val notificationManager =
             appContext.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
         notificationManager?.cancelAll()
+        val keepDarkTheme = prefs.getBoolean(KEY_DARK_THEME, true)
         val nextParticipantId = UUID.randomUUID().toString()
         prefs.edit()
             .clear()
             .putString(KEY_PARTICIPANT_ID, nextParticipantId)
+            .putBoolean(KEY_DARK_THEME, keepDarkTheme)
             .apply()
         return read()
     }
@@ -142,5 +152,6 @@ class SharedPrefsControlStore(context: Context) : ControlStore {
         private const val KEY_PAUSED_AT = "paused_at_ms"
         private const val KEY_RESUMED_AT = "resumed_at_ms"
         private const val KEY_BACKFILL_PAUSED = "backfill_paused_period"
+        private const val KEY_DARK_THEME = "dark_theme_enabled"
     }
 }

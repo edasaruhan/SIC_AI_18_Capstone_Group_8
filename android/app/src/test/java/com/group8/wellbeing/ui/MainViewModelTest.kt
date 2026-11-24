@@ -3,8 +3,14 @@ package com.group8.wellbeing.ui
 import com.group8.wellbeing.data.ControlSnapshot
 import com.group8.wellbeing.data.ControlStore
 import com.group8.wellbeing.domain.CollectionStatus
+import com.group8.wellbeing.usage.NormalizedEventType
+import com.group8.wellbeing.usage.NormalizedUsageEvent
 import com.group8.wellbeing.usage.NotificationPermissionState
+import com.group8.wellbeing.usage.UsageEventNormalizer
+import com.group8.wellbeing.usage.UsageEventReader
 import com.group8.wellbeing.usage.UsagePermissionState
+import com.group8.wellbeing.usage.UsageQueryBatchResult
+import com.group8.wellbeing.usage.UsageQueryErrorCode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
@@ -13,21 +19,27 @@ import org.junit.Test
 
 class MainViewModelTest {
     @Test
-    fun t02_declinedConsentPreventsCollection() {
+    fun t02_declinedConsentPreventsCollectionAndReaderCalls() {
         val store = FakeControlStore()
-        val viewModel = MainViewModel(store) { 1_700_000_000_000L }
+        val reader = CountingUsageEventReader()
+        val viewModel = MainViewModel(store, reader) { 1_700_000_000_000L }
 
         viewModel.syncPermissions(
             usagePermission = UsagePermissionState.GRANTED,
             notificationPermission = NotificationPermissionState.GRANTED
         )
         viewModel.declineConsent()
+        viewModel.queryRecentEvents(
+            usagePermission = UsagePermissionState.GRANTED,
+            notificationPermission = NotificationPermissionState.GRANTED
+        )
 
         val state = viewModel.uiState.value
         assertFalse(state.consentAccepted)
         assertTrue(state.consentDeclined)
         assertEquals(CollectionStatus.CONSENT_PENDING, state.collectionStatus)
         assertFalse(state.canQueryUsageData)
+        assertEquals(0, reader.callCount)
     }
 
     @Test
@@ -58,7 +70,8 @@ class MainViewModelTest {
     @Test
     fun t22_pauseAndResumeDoesNotBackfillPausedPeriodByDefault() {
         val store = FakeControlStore()
-        val viewModel = MainViewModel(store) { 1_700_000_000_000L }
+        val reader = CountingUsageEventReader()
+        val viewModel = MainViewModel(store, reader) { 1_700_000_000_000L }
 
         viewModel.acceptConsent()
         viewModel.syncPermissions(
@@ -66,8 +79,13 @@ class MainViewModelTest {
             notificationPermission = NotificationPermissionState.NOT_REQUIRED
         )
         viewModel.pauseCollection()
+        viewModel.queryRecentEvents(
+            usagePermission = UsagePermissionState.GRANTED,
+            notificationPermission = NotificationPermissionState.NOT_REQUIRED
+        )
         assertEquals(CollectionStatus.PAUSED_BY_USER, viewModel.uiState.value.collectionStatus)
         assertFalse(viewModel.uiState.value.canQueryUsageData)
+        assertEquals(0, reader.callCount)
 
         viewModel.resumeCollection()
         assertEquals(CollectionStatus.ACTIVE, viewModel.uiState.value.collectionStatus)
@@ -95,6 +113,85 @@ class MainViewModelTest {
         assertNotEquals(initialParticipantId, store.read().participantId)
     }
 
+    @Test
+    fun themeToggleFlipsDarkModePreference() {
+        val store = FakeControlStore()
+        val viewModel = MainViewModel(store) { 1_700_000_000_000L }
+
+        viewModel.syncPermissions(
+            usagePermission = UsagePermissionState.REQUIRED,
+            notificationPermission = NotificationPermissionState.NOT_REQUIRED
+        )
+        assertTrue(viewModel.uiState.value.darkThemeEnabled)
+
+        viewModel.toggleTheme()
+        assertFalse(viewModel.uiState.value.darkThemeEnabled)
+
+        viewModel.toggleTheme()
+        assertTrue(viewModel.uiState.value.darkThemeEnabled)
+    }
+
+    @Test
+    fun m03_activeQueryPopulatesNormalizedEventsAndSummary() {
+        val store = FakeControlStore()
+        val reader = CountingUsageEventReader()
+        val viewModel = MainViewModel(store, reader) { 1_700_000_000_000L }
+
+        viewModel.acceptConsent()
+        viewModel.syncPermissions(
+            usagePermission = UsagePermissionState.GRANTED,
+            notificationPermission = NotificationPermissionState.GRANTED
+        )
+        viewModel.queryRecentEvents(
+            usagePermission = UsagePermissionState.GRANTED,
+            notificationPermission = NotificationPermissionState.GRANTED
+        )
+
+        val state = viewModel.uiState.value
+        assertEquals(1, reader.callCount)
+        assertEquals(2, state.inspectedEvents.size)
+        assertEquals(UsageQueryErrorCode.NONE, state.lastQuerySummary?.errorCode)
+        assertEquals(2, state.lastQuerySummary?.normalizedCount)
+    }
+
+    private class CountingUsageEventReader : UsageEventReader {
+        var callCount: Int = 0
+
+        override fun queryEvents(startMs: Long, endMs: Long, collectedAtMs: Long): UsageQueryBatchResult {
+            callCount += 1
+            return UsageQueryBatchResult(
+                queriedStartMs = startMs,
+                queriedEndMs = endMs,
+                collectedAtMs = collectedAtMs,
+                permissionState = UsagePermissionState.GRANTED,
+                events = listOf(
+                    NormalizedUsageEvent(
+                        timestampMs = startMs + 1_000L,
+                        eventType = NormalizedEventType.KEYGUARD_HIDDEN,
+                        packageName = null,
+                        packageToken = null,
+                        className = null,
+                        isNonAppPackage = false,
+                        sourceEventCode = UsageEventNormalizer.EVENT_KEYGUARD_HIDDEN,
+                        sourceVersion = UsageEventNormalizer.SOURCE_VERSION
+                    ),
+                    NormalizedUsageEvent(
+                        timestampMs = startMs + 2_000L,
+                        eventType = NormalizedEventType.APP_FOREGROUND,
+                        packageName = "com.example.news",
+                        packageToken = "pkg_1234567890ab",
+                        className = "com.example.news.HomeActivity",
+                        isNonAppPackage = false,
+                        sourceEventCode = UsageEventNormalizer.EVENT_ACTIVITY_RESUMED,
+                        sourceVersion = UsageEventNormalizer.SOURCE_VERSION
+                    )
+                ),
+                rawScannedCount = 5,
+                errorCode = UsageQueryErrorCode.NONE
+            )
+        }
+    }
+
     private class FakeControlStore : ControlStore {
         private var idCounter = 1
         private var snapshot = ControlSnapshot(
@@ -106,7 +203,8 @@ class MainViewModelTest {
             pausedByUser = false,
             pausedAtMs = null,
             resumedAtMs = null,
-            backfillPausedPeriod = false
+            backfillPausedPeriod = false,
+            darkThemeEnabled = true
         )
 
         override fun read(): ControlSnapshot = snapshot
@@ -152,6 +250,11 @@ class MainViewModelTest {
             return snapshot
         }
 
+        override fun setDarkThemeEnabled(enabled: Boolean): ControlSnapshot {
+            snapshot = snapshot.copy(darkThemeEnabled = enabled)
+            return snapshot
+        }
+
         override fun deleteAllLocalData(): ControlSnapshot {
             idCounter += 1
             snapshot = ControlSnapshot(
@@ -163,7 +266,8 @@ class MainViewModelTest {
                 pausedByUser = false,
                 pausedAtMs = null,
                 resumedAtMs = null,
-                backfillPausedPeriod = false
+                backfillPausedPeriod = false,
+                darkThemeEnabled = snapshot.darkThemeEnabled
             )
             return snapshot
         }
