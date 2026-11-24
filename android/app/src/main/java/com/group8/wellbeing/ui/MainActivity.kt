@@ -23,6 +23,9 @@ import com.group8.wellbeing.ui.theme.WellbeingTheme
 import com.group8.wellbeing.usage.AndroidUsageEventReader
 import com.group8.wellbeing.usage.NotificationPermissionChecker
 import com.group8.wellbeing.usage.UsageAccessChecker
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class MainActivity : ComponentActivity() {
     private val viewModel: MainViewModel by viewModels {
@@ -39,6 +42,34 @@ class MainActivity : ComponentActivity() {
         ActivityResultContracts.RequestPermission()
     ) { granted ->
         viewModel.onNotificationPermissionResult(granted)
+    }
+
+    private val createExportZipLauncher = registerForActivityResult(
+        ActivityResultContracts.CreateDocument("application/zip")
+    ) { uri ->
+        if (uri == null) {
+            viewModel.onExportCompleted(success = false)
+            return@registerForActivityResult
+        }
+        val bytes = viewModel.consumePendingExportZipBytes()
+        if (bytes == null) {
+            viewModel.onExportCompleted(success = false, detail = "Dışa aktarılacak paket bulunamadı.")
+            return@registerForActivityResult
+        }
+        val writeResult = runCatching {
+            contentResolver.openOutputStream(uri)?.use { stream ->
+                stream.write(bytes)
+                stream.flush()
+            } ?: error("Çıkış akışı açılamadı.")
+        }
+        if (writeResult.isSuccess) {
+            viewModel.onExportCompleted(success = true)
+        } else {
+            viewModel.onExportCompleted(
+                success = false,
+                detail = "Dışa aktarım yazılamadı: ${writeResult.exceptionOrNull()?.message ?: "Bilinmeyen hata"}"
+            )
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -77,6 +108,12 @@ class MainActivity : ComponentActivity() {
                                 notificationPermission = NotificationPermissionChecker.check(this)
                             )
                         },
+                        onSubmitFeedback = { windowId, startMs, endMs, answer, status ->
+                            viewModel.submitFeedback(windowId, startMs, endMs, answer, status)
+                        },
+                        onRequestExportPreview = { viewModel.prepareExportPreview() },
+                        onDismissExportPreview = { viewModel.dismissExportPreview() },
+                        onConfirmExportZip = { launchExportDocumentPicker() },
                         onOpenUsageAccessSettings = { openUsageAccessSettings() },
                         onRequestNotificationPermission = { requestNotificationPermission() },
                         onPauseCollection = { viewModel.pauseCollection() },
@@ -106,6 +143,11 @@ class MainActivity : ComponentActivity() {
             usagePermission = UsageAccessChecker.check(this),
             notificationPermission = NotificationPermissionChecker.check(this)
         )
+    }
+
+    private fun launchExportDocumentPicker() {
+        val stamp = SimpleDateFormat("yyyyMMdd_HHmm", Locale.US).format(Date())
+        createExportZipLauncher.launch("wellbeing_export_$stamp.zip")
     }
 
     private fun openUsageAccessSettings() {

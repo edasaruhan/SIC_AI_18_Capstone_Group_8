@@ -1,6 +1,8 @@
 package com.group8.wellbeing.ui
 
 import com.group8.wellbeing.domain.CollectionStatus
+import com.group8.wellbeing.domain.FeedbackAnswer
+import com.group8.wellbeing.domain.FeedbackResponseStatus
 import com.group8.wellbeing.usage.NormalizedEventType
 import com.group8.wellbeing.usage.NotificationPermissionState
 import com.group8.wellbeing.usage.UsagePermissionState
@@ -8,6 +10,7 @@ import com.group8.wellbeing.usage.UsageQueryErrorCode
 
 enum class MainTab {
     STATUS,
+    PERIODS,
     INSPECTOR
 }
 
@@ -26,9 +29,32 @@ data class QuerySummaryUi(
     val normalizedCount: Int,
     val insertedCount: Int,
     val duplicateSkippedCount: Int,
+    val computedWindowCount: Int,
     val errorCode: UsageQueryErrorCode,
     val errorDetail: String?,
     val countsByType: Map<NormalizedEventType, Int>
+)
+
+data class PeriodItemUi(
+    val windowId: Long,
+    val windowStartMs: Long,
+    val windowEndMs: Long,
+    val rangeLabel: String,
+    val dateLabel: String,
+    val screenText: String,
+    val sessionsStarted: Int,
+    val appSwitches: Int,
+    val longestRunText: String,
+    val qualityStatus: String,
+    val qualityReasons: String,
+    val feedbackAnswer: FeedbackAnswer?,
+    val feedbackStatus: FeedbackResponseStatus
+)
+
+data class ExportPreviewUi(
+    val windowCount: Int,
+    val feedbackCount: Int,
+    val dateRangeText: String
 )
 
 data class MainUiState(
@@ -47,12 +73,16 @@ data class MainUiState(
     val notificationPermissionState: NotificationPermissionState = NotificationPermissionState.NOT_REQUIRED,
     val pausedByUser: Boolean = false,
     val showDeleteDialog: Boolean = false,
+    val exportPreview: ExportPreviewUi? = null,
     val statusNotice: String = "Henüz kontrol yapılmadı.",
     val manualCheckCount: Int = 0,
     val storedRawEventCount: Int = 0,
     val storedBatchCount: Int = 0,
+    val storedWindowCount: Int = 0,
+    val storedFeedbackCount: Int = 0,
     val lastCheckpointText: String = "Henüz kayıt yok",
-    val selectedLookbackMinutes: Int = 30,
+    val selectedLookbackMinutes: Int = 120,
     val lastQuerySummary: QuerySummaryUi? = null,
-    val inspectedEvents: List<InspectedEventUi> = emptyList()
+    val inspectedEvents: List<InspectedEventUi> = emptyList(),
+    val periodItems: List<PeriodItemUi> = emptyList()
 )

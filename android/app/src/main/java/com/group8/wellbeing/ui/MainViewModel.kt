@@ -6,9 +6,15 @@ import androidx.lifecycle.viewModelScope
 import com.group8.wellbeing.data.AppConfig
 import com.group8.wellbeing.data.ControlSnapshot
 import com.group8.wellbeing.data.ControlStore
+import com.group8.wellbeing.data.ExportFormatter
+import com.group8.wellbeing.data.ExportPayload
 import com.group8.wellbeing.data.LocalDataRepository
 import com.group8.wellbeing.data.StorageStats
+import com.group8.wellbeing.data.local.FeatureWindowEntity
+import com.group8.wellbeing.data.local.FeedbackEntity
 import com.group8.wellbeing.domain.CollectionStateResolver
+import com.group8.wellbeing.domain.FeedbackAnswer
+import com.group8.wellbeing.domain.FeedbackResponseStatus
 import com.group8.wellbeing.usage.NormalizedEventType
 import com.group8.wellbeing.usage.NotificationPermissionState
 import com.group8.wellbeing.usage.UsageEventReader
@@ -23,12 +29,14 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.math.roundToInt
 
 class MainViewModel(
     private val controlStore: ControlStore,
     private val usageEventReader: UsageEventReader? = null,
     private val localDataRepository: LocalDataRepository? = null,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val appVersion: String = "0.6.0-m09-m13",
     private val nowMsProvider: () -> Long = { System.currentTimeMillis() }
 ) : ViewModel() {
     private val mutableUiState = MutableStateFlow(MainUiState())
@@ -38,6 +46,8 @@ class MainViewModel(
     private var lastNotificationPermission: NotificationPermissionState = NotificationPermissionState.NOT_REQUIRED
     private var errorMessage: String? = null
     private var latestStats: StorageStats = StorageStats()
+    private var latestPeriods: List<PeriodItemUi> = emptyList()
+    private var pendingExportPayload: ExportPayload? = null
 
     fun syncPermissions(
         usagePermission: UsagePermissionState,
@@ -51,7 +61,7 @@ class MainViewModel(
             controlStore.read()
         }
         publish(snapshot)
-        refreshStorageStats(snapshot)
+        refreshStorageAndPeriods(snapshot)
     }
 
     fun toggleTheme() {
@@ -77,7 +87,7 @@ class MainViewModel(
             snapshot = snapshot,
             notice = "Katılım onayınız kaydedildi (${AppConfig.CONSENT_VERSION})."
         )
-        refreshStorageStats(snapshot)
+        refreshStorageAndPeriods(snapshot)
     }
 
     fun declineConsent() {
@@ -133,14 +143,101 @@ class MainViewModel(
         errorMessage = null
         val snapshot = controlStore.deleteAllLocalData()
         latestStats = StorageStats()
+        latestPeriods = emptyList()
+        pendingExportPayload = null
         viewModelScope.launch(ioDispatcher) {
             localDataRepository?.clearAllLocalData()
         }
         publish(
             snapshot = snapshot,
             showDeleteDialog = false,
+            exportPreview = null,
             notice = "Yerel veritabanı, katılım onayı ve bekleyen bildirimler temizlendi. Yeni yerel kimlik oluşturuldu; daha önce dışa aktardığınız dosyalar otomatik silinmez.",
             clearInspector = true
+        )
+    }
+
+    fun submitFeedback(
+        windowId: Long,
+        windowStartMs: Long,
+        windowEndMs: Long,
+        answer: FeedbackAnswer?,
+        responseStatus: FeedbackResponseStatus
+    ) {
+        val repository = localDataRepository ?: return
+        val snapshot = controlStore.read()
+        viewModelScope.launch(ioDispatcher) {
+            repository.saveFeedback(
+                participantId = snapshot.participantId,
+                windowId = windowId,
+                predictionId = null,
+                windowStartMs = windowStartMs,
+                windowEndMs = windowEndMs,
+                answer = answer,
+                responseStatus = responseStatus,
+                nowMs = nowMsProvider()
+            )
+            val label = when {
+                responseStatus == FeedbackResponseStatus.SKIPPED -> "Atlandı"
+                answer == FeedbackAnswer.YES -> "Evet"
+                answer == FeedbackAnswer.NO -> "Hayır"
+                else -> "Kaydedildi"
+            }
+            loadStorageAndPeriodsBlocking(snapshot)
+            publish(
+                snapshot = snapshot,
+                notice = "${formatHourMinute(windowStartMs)}–${formatHourMinute(windowEndMs)} dönemi için geri bildirim kaydedildi: $label."
+            )
+        }
+    }
+
+    fun prepareExportPreview() {
+        val repository = localDataRepository ?: return
+        val snapshot = controlStore.read()
+        viewModelScope.launch(ioDispatcher) {
+            val payload = repository.buildExportPayload(
+                participantId = snapshot.participantId,
+                appVersion = appVersion,
+                nowMs = nowMsProvider()
+            )
+            pendingExportPayload = payload
+            val dateRange = if (payload.includedStartMs != null && payload.includedEndMs != null) {
+                "${formatDateTime(payload.includedStartMs)} – ${formatDateTime(payload.includedEndMs)}"
+            } else {
+                "Henüz kayıtlı dönem yok"
+            }
+            publish(
+                snapshot = snapshot,
+                exportPreview = ExportPreviewUi(
+                    windowCount = payload.windowCount,
+                    feedbackCount = payload.feedbackCount,
+                    dateRangeText = dateRange
+                )
+            )
+        }
+    }
+
+    fun dismissExportPreview() {
+        mutableUiState.value = mutableUiState.value.copy(exportPreview = null)
+    }
+
+    fun consumePendingExportZipBytes(): ByteArray? {
+        val payload = pendingExportPayload ?: return null
+        return ExportFormatter.toZipBytes(payload)
+    }
+
+    fun onExportCompleted(success: Boolean, detail: String? = null) {
+        pendingExportPayload = null
+        val snapshot = controlStore.read()
+        val message = if (success) {
+            "Dışa aktarım tamamlandı (UTF-8 CSV + JSON manifest, ham paket adları hariç)."
+        } else {
+            detail ?: "Dışa aktarım iptal edildi."
+        }
+        publish(
+            snapshot = snapshot,
+            exportPreview = null,
+            notice = message
         )
     }
 
@@ -165,7 +262,7 @@ class MainViewModel(
         val nextCount = mutableUiState.value.manualCheckCount + 1
         val timeText = formatTime(nowMsProvider())
         val queryNote = if (resolved.canQueryUsageData) {
-            "Yetki ve onay uygun. Olay İnceleyici üzerinden okuma ve yerel kayıt yapabilirsiniz."
+            "Yetki ve onay uygun. Olaylar sekmesinden okuma ve yerel kayıt yapabilirsiniz."
         } else {
             "Veri sorgusu kapalı (${resolved.status.name})."
         }
@@ -174,7 +271,7 @@ class MainViewModel(
             notice = "Kontrol #$nextCount ($timeText): $queryNote",
             manualCheckCount = nextCount
         )
-        refreshStorageStats(snapshot)
+        refreshStorageAndPeriods(snapshot)
     }
 
     fun queryRecentEvents(
@@ -212,6 +309,7 @@ class MainViewModel(
                 normalizedCount = 0,
                 insertedCount = 0,
                 duplicateSkippedCount = 0,
+                computedWindowCount = 0,
                 errorCode = blockedCode,
                 errorDetail = resolved.nextStepMessage,
                 countsByType = emptyMap()
@@ -242,8 +340,10 @@ class MainViewModel(
             if (persistence != null) {
                 latestStats = persistence.stats
             }
+            loadStorageAndPeriodsBlocking(snapshot)
             val insertedCount = persistence?.insertedEventCount ?: result.events.size
             val duplicateSkippedCount = persistence?.duplicateSkippedCount ?: 0
+            val computedWindowCount = persistence?.computedWindowCount ?: 0
             val counts = result.events.groupingBy { it.eventType }.eachCount()
             val summary = QuerySummaryUi(
                 rangeText = "${formatTime(result.queriedStartMs)} - ${formatTime(result.queriedEndMs)}",
@@ -252,6 +352,7 @@ class MainViewModel(
                 normalizedCount = result.events.size,
                 insertedCount = insertedCount,
                 duplicateSkippedCount = duplicateSkippedCount,
+                computedWindowCount = computedWindowCount,
                 errorCode = result.errorCode,
                 errorDetail = result.errorDetail,
                 countsByType = counts
@@ -277,7 +378,7 @@ class MainViewModel(
                 )
             }
             val noticeText = if (result.errorCode == UsageQueryErrorCode.NONE) {
-                "Son $lookbackMinutes dk: ${result.events.size} olay okundu ($insertedCount yeni, $duplicateSkippedCount yinelenen atlandı)."
+                "Son $lookbackMinutes dk: ${result.events.size} olay (+$insertedCount yeni), $computedWindowCount tamamlanmış pencere hesaplandı."
             } else {
                 "Sorgu uyarısı (${result.errorCode.name}): ${result.errorDetail ?: "Kayıt alınamadı."}"
             }
@@ -290,11 +391,52 @@ class MainViewModel(
         }
     }
 
-    private fun refreshStorageStats(snapshot: ControlSnapshot) {
-        val repository = localDataRepository ?: return
+    private fun refreshStorageAndPeriods(snapshot: ControlSnapshot) {
+        if (localDataRepository == null) {
+            return
+        }
         viewModelScope.launch(ioDispatcher) {
-            latestStats = repository.readStorageStats(snapshot.participantId)
+            loadStorageAndPeriodsBlocking(snapshot)
             publish(controlStore.read())
+        }
+    }
+
+    private suspend fun loadStorageAndPeriodsBlocking(snapshot: ControlSnapshot) {
+        val repository = localDataRepository ?: return
+        latestStats = repository.readStorageStats(snapshot.participantId)
+        val windows = repository.readFeatureWindows(snapshot.participantId)
+        val feedbacks = repository.readFeedbacks(snapshot.participantId)
+        latestPeriods = mapPeriods(windows, feedbacks)
+    }
+
+    private fun mapPeriods(
+        windows: List<FeatureWindowEntity>,
+        feedbacks: List<FeedbackEntity>
+    ): List<PeriodItemUi> {
+        val feedbackByRange = feedbacks.associateBy { fb -> fb.windowStartMs to fb.windowEndMs }
+        return windows.map { w ->
+            val fb = feedbackByRange[w.startMs to w.endMs]
+            val parsedAnswer = fb?.answer?.let { raw ->
+                runCatching { FeedbackAnswer.valueOf(raw) }.getOrNull()
+            }
+            val parsedStatus = fb?.responseStatus?.let { raw ->
+                runCatching { FeedbackResponseStatus.valueOf(raw) }.getOrNull()
+            } ?: FeedbackResponseStatus.UNANSWERED
+            PeriodItemUi(
+                windowId = w.id,
+                windowStartMs = w.startMs,
+                windowEndMs = w.endMs,
+                rangeLabel = "${formatHourMinute(w.startMs)} – ${formatHourMinute(w.endMs)}",
+                dateLabel = formatDateOnly(w.startMs),
+                screenText = formatDuration(w.screenSeconds),
+                sessionsStarted = w.sessionsStarted,
+                appSwitches = w.appSwitches,
+                longestRunText = formatDuration(w.longestRunSeconds),
+                qualityStatus = w.qualityStatus,
+                qualityReasons = w.qualityReasons,
+                feedbackAnswer = parsedAnswer,
+                feedbackStatus = parsedStatus
+            )
         }
     }
 
@@ -302,6 +444,7 @@ class MainViewModel(
         snapshot: ControlSnapshot,
         notice: String? = null,
         showDeleteDialog: Boolean = mutableUiState.value.showDeleteDialog,
+        exportPreview: ExportPreviewUi? = mutableUiState.value.exportPreview,
         manualCheckCount: Int = mutableUiState.value.manualCheckCount,
         querySummary: QuerySummaryUi? = mutableUiState.value.lastQuerySummary,
         inspectedEvents: List<InspectedEventUi> = mutableUiState.value.inspectedEvents,
@@ -329,14 +472,35 @@ class MainViewModel(
             notificationPermissionState = lastNotificationPermission,
             pausedByUser = snapshot.pausedByUser,
             showDeleteDialog = showDeleteDialog,
+            exportPreview = exportPreview,
             statusNotice = notice ?: current.statusNotice,
             manualCheckCount = manualCheckCount,
             storedRawEventCount = latestStats.storedRawEventCount,
             storedBatchCount = latestStats.storedBatchCount,
+            storedWindowCount = latestStats.storedWindowCount,
+            storedFeedbackCount = latestStats.storedFeedbackCount,
             lastCheckpointText = latestStats.lastCheckpointMs?.let { formatDateTime(it) } ?: "Henüz kayıt yok",
             lastQuerySummary = if (clearInspector) null else querySummary,
-            inspectedEvents = if (clearInspector) emptyList() else inspectedEvents
+            inspectedEvents = if (clearInspector) emptyList() else inspectedEvents,
+            periodItems = latestPeriods
         )
+    }
+
+    private fun formatDuration(seconds: Double): String {
+        val totalSec = seconds.roundToInt()
+        val mins = totalSec / 60
+        val secs = totalSec % 60
+        return if (mins > 0) "${mins} dk ${secs} sn" else "${secs} sn"
+    }
+
+    private fun formatHourMinute(epochMs: Long): String {
+        val formatter = SimpleDateFormat("HH:mm", Locale.getDefault())
+        return formatter.format(Date(epochMs))
+    }
+
+    private fun formatDateOnly(epochMs: Long): String {
+        val formatter = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
+        return formatter.format(Date(epochMs))
     }
 
     private fun formatTime(epochMs: Long): String {

@@ -48,6 +48,9 @@ interface WellbeingDao {
     @Query("SELECT * FROM feature_windows WHERE participant_id = :participantId ORDER BY start_ms DESC")
     suspend fun getAllFeatureWindows(participantId: String): List<FeatureWindowEntity>
 
+    @Query("SELECT COUNT(*) FROM feature_windows WHERE participant_id = :participantId")
+    suspend fun countFeatureWindows(participantId: String): Int
+
     @Query("DELETE FROM feature_windows WHERE end_ms < :cutoffMs")
     suspend fun deleteFeatureWindowsBefore(cutoffMs: Long): Int
 
@@ -60,8 +63,24 @@ interface WellbeingDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertFeedback(feedback: FeedbackEntity): Long
 
+    @Query(
+        "SELECT * FROM feedbacks WHERE participant_id = :participantId " +
+            "AND window_start_ms = :windowStartMs AND window_end_ms = :windowEndMs LIMIT 1"
+    )
+    suspend fun findFeedback(
+        participantId: String,
+        windowStartMs: Long,
+        windowEndMs: Long
+    ): FeedbackEntity?
+
     @Query("SELECT * FROM feedbacks WHERE participant_id = :participantId ORDER BY window_start_ms DESC")
     suspend fun getAllFeedbacks(participantId: String): List<FeedbackEntity>
+
+    @Query("SELECT COUNT(*) FROM feedbacks WHERE participant_id = :participantId")
+    suspend fun countFeedbacks(participantId: String): Int
+
+    @Query("DELETE FROM feedbacks WHERE window_end_ms < :cutoffMs")
+    suspend fun deleteFeedbacksBefore(cutoffMs: Long): Int
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertSettings(settings: AppSettingsEntity)
