@@ -2,17 +2,54 @@
 
 **Ana sorumlu:** Murat Gürel. **Entegrasyon desteği:** Yiğit Kayalı.
 
-Kotlin Android projesi Android Studio ile bu klasörün içinde kurulacaktır. Henüz Gradle projesi veya çalıştırılabilir uygulama yoktur.
+Bu klasör, Adaptive Digital Wellbeing Coach projesinin tek modüllü Kotlin ve Jetpack Compose tabanlı Android uygulamasını içerir.
 
-## Planlanan başlangıç
+## Uyumlu araç ve sürüm bilgileri
 
-1. Android 9 / API 28 minimum sürümüyle projeyi kurmak.
-2. Kullanıcı onamı ve sistem ayarlarından kullanım erişimi izni akışını hazırlamak.
-3. UsageStatsManager olaylarını toplayıp farklı Android sürümlerinde erişilebilirliği, arka plan davranışını ve pil etkisini kontrol etmek.
-4. Room ile yerel saklama, WorkManager ile zamanlanmış işleme ve Jetpack Compose ile temel ekranları geliştirmek.
-5. Tamamlanan 30 dakikalık pencerenin özelliklerini Python ile aynı kurallarla hesaplamak; ortak sentetik örneklerle eşliği doğrulamak.
-6. Yiğit ile model tahminini bağlamak; günlük sınır, sessiz saatler, kapatma/duraklatma ve geri bildirim akışlarını eklemek.
+| Bileşen | Sürüm |
+| --- | --- |
+| Android Studio | 2026.2.2 (Rabbit 2 Patch 2, AI-262.10968.63.2622.16975389) |
+| JDK (Android Studio JBR) | OpenJDK 25.0.4 |
+| Gradle Wrapper | 9.3.1 |
+| Android Gradle Plugin (AGP) | 9.1.0 |
+| Kotlin / Compose Compiler | 2.2.10 |
+| Jetpack Compose BOM | 2025.05.00 |
+| `minSdk` | 28 (Android 9) |
+| `compileSdk` / `targetSdk` | 37 (Android SDK Platform 17 / `android-37.0`) |
+| Build Tools | 36.0.0 |
 
-ONNX Runtime Mobile henüz kesinleşmiş bir bağımlılık değildir. Mobil tahmin formatı boyut, uyumluluk ve gecikme denemesinden sonra seçilecektir. Cihazda kişiselleştirme de ayrıca değerlendirilecektir.
+## Paket yapısı (`com.group8.wellbeing`)
 
-Gerçek kullanım kayıtları ve geri bildirimler repoya eklenmez. “Hayır” yanıtı ve atlanan soru ayrı tutulur; hatırlatmayı kapatma eylemi kullanım etiketi yerine geçmez. Ayrıntılar [geliştirme notlarında](../documents/development_notes.md) yer alır.
+- `ui`: Jetpack Compose ekranları, durum modeli ve ViewModel (`MainActivity`, `MainScreen`, `MainViewModel`, `MainUiState`)
+- `data`: Tek merkezli başlangıç yapılandırması (`AppConfig`) ve ileride Room varlıkları ile repository katmanı
+- `usage`: Kullanım erişimi yetki denetimi (`UsageAccessChecker`) ve ileride `UsageStatsManager` olay normalizasyonu
+- `domain`: Uygulama toplama durumları (`CollectionStatus`) ve ileride saf Kotlin oturum/özellik hesaplayıcıları
+- `worker`: Arka plan zamanlama arayüz sınırı (`CollectionScheduler`) ve ileride WorkManager işi
+- `inference`: Model adaptörü ve ortak 7 özellik vektörü sınırı (`FeatureVector`, `Predictor`)
+
+## Kurulum ve derleme adımları
+
+1. Depoyu klonlayın ve `android/` klasörünü Android Studio ile açın.
+2. Android SDK yolu `android/local.properties` dosyasında yerel olarak tanımlanır ve Git deposuna eklenmez.
+3. Komut satırından debug APK derlemek ve birim testlerini çalıştırmak için (`android/` klasöründe):
+
+```powershell
+$env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"
+.\gradlew.bat assembleDebug testDebugUnitTest --no-daemon
+```
+
+4. Üretilen debug APK konumu: `android/app/build/outputs/apk/debug/app-debug.apk`.
+5. Gerçek cihazda veya emülatörde kurulum için Android Studio'dan **Run** kullanın veya `adb install -r app\build\outputs\apk\debug\app-debug.apk` komutunu çalıştırın.
+
+## İzinler ve gizlilik sınırları
+
+- `android.permission.PACKAGE_USAGE_STATS` manifestte tanımlıdır; ancak tek başına erişim vermez, M02 ile sistem ayarlarından kullanıcı izni ve ayrı onam akışı eklenecektir.
+- `android:allowBackup="false"` ayarı ile yerel verilerin Android otomatik yedekleme üzerinden buluta taşınması engellenmiştir.
+- Onam alınmadan kullanım geçmişi sorgulanmaz; gerçek kullanım kayıtları, geri bildirimler, `local.properties`, derleme çıktıları ve imzalama anahtarları depoya eklenmez.
+- Model dosyası bağlı olmadığından arayüzde sahte risk skoru gösterilmez. ONNX Runtime Mobile veya alternatif mobil format seçimi M11 aşamasında yapılacaktır.
+
+## Çalışma ve doğrulama kaydı
+
+| Tarih | Sürüm / Dal | Görev | Uygulanan kontroller | Durum ve notlar |
+| --- | --- | --- | --- | --- |
+| 2026-11-24 | `0.1.0-m01` (`feat/android-m01-setup`) | M01 Proje kurulumu | `./gradlew assembleDebug`, `./gradlew testDebugUnitTest` (`AppConfigTest`), emülatör (`Medium Phone API 37.0`) | Temiz Gradle derlemesi, birim testi ve emülatörde ilk ekran + elle deneme akışı doğrulandı. Gerçek Android cihaz kurulumu (T01 gerçek cihaz kabulü) fiziksel telefon testine bırakıldı. |
