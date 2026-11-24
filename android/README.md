@@ -2,7 +2,7 @@
 
 **Ana sorumlu:** Murat Gürel. **Entegrasyon desteği:** Yiğit Kayalı.
 
-Bu klasör, Adaptive Digital Wellbeing Coach projesinin tek modüllü Kotlin ve Jetpack Compose tabanlı Android uygulamasını içerir.
+Bu klasör, Adaptive Digital Wellbeing Coach projesinin tek modüllü Kotlin ve Jetpack Compose tabanlı Android uygulamasını içerir. Aşamalı geliştirme planı (`M01–M15`), ortak özellik eşlik örnekleri (`F01–F12`) ve test matrisi (`T01–T25`) için [Android Yol Haritası](ROADMAP.md) belgesine bakabilirsiniz.
 
 ## Uyumlu araç ve sürüm bilgileri
 
