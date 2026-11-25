@@ -1,0 +1,646 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "6417966f76a4fc81df9a462cf565f124",
+    "entities": [
+      {
+        "tableName": "raw_usage_events",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `participant_id` TEXT NOT NULL, `timestamp_ms` INTEGER NOT NULL, `event_type` TEXT NOT NULL, `package_token` TEXT, `is_non_app_package` INTEGER NOT NULL, `source_event_code` INTEGER NOT NULL, `source_version` TEXT NOT NULL, `event_fingerprint` TEXT NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "participantId",
+            "columnName": "participant_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timestampMs",
+            "columnName": "timestamp_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "eventType",
+            "columnName": "event_type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "packageToken",
+            "columnName": "package_token",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "isNonAppPackage",
+            "columnName": "is_non_app_package",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sourceEventCode",
+            "columnName": "source_event_code",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sourceVersion",
+            "columnName": "source_version",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "eventFingerprint",
+            "columnName": "event_fingerprint",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_raw_usage_events_participant_id_event_fingerprint",
+            "unique": true,
+            "columnNames": [
+              "participant_id",
+              "event_fingerprint"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_raw_usage_events_participant_id_event_fingerprint` ON `${TABLE_NAME}` (`participant_id`, `event_fingerprint`)"
+          },
+          {
+            "name": "index_raw_usage_events_participant_id_timestamp_ms",
+            "unique": false,
+            "columnNames": [
+              "participant_id",
+              "timestamp_ms"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_raw_usage_events_participant_id_timestamp_ms` ON `${TABLE_NAME}` (`participant_id`, `timestamp_ms`)"
+          }
+        ]
+      },
+      {
+        "tableName": "collection_batches",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `participant_id` TEXT NOT NULL, `queried_start_ms` INTEGER NOT NULL, `queried_end_ms` INTEGER NOT NULL, `collected_at_ms` INTEGER NOT NULL, `permission_state` TEXT NOT NULL, `raw_scanned_count` INTEGER NOT NULL, `result_count` INTEGER NOT NULL, `inserted_count` INTEGER NOT NULL, `error_code` TEXT NOT NULL, `error_detail` TEXT)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "participantId",
+            "columnName": "participant_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "queriedStartMs",
+            "columnName": "queried_start_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "queriedEndMs",
+            "columnName": "queried_end_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "collectedAtMs",
+            "columnName": "collected_at_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "permissionState",
+            "columnName": "permission_state",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rawScannedCount",
+            "columnName": "raw_scanned_count",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "resultCount",
+            "columnName": "result_count",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "insertedCount",
+            "columnName": "inserted_count",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "errorCode",
+            "columnName": "error_code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "errorDetail",
+            "columnName": "error_detail",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_collection_batches_participant_id_collected_at_ms",
+            "unique": false,
+            "columnNames": [
+              "participant_id",
+              "collected_at_ms"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_collection_batches_participant_id_collected_at_ms` ON `${TABLE_NAME}` (`participant_id`, `collected_at_ms`)"
+          }
+        ]
+      },
+      {
+        "tableName": "feature_windows",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `participant_id` TEXT NOT NULL, `start_ms` INTEGER NOT NULL, `end_ms` INTEGER NOT NULL, `timezone_id` TEXT NOT NULL, `offset_seconds` INTEGER NOT NULL, `screen_s` REAL NOT NULL, `sessions_started` INTEGER NOT NULL, `longest_run_s` REAL NOT NULL, `app_switches` INTEGER NOT NULL, `prev_session_s` REAL NOT NULL, `hour` INTEGER NOT NULL, `dow` INTEGER NOT NULL, `schema_version` TEXT NOT NULL, `revision` INTEGER NOT NULL, `quality_status` TEXT NOT NULL, `quality_reasons` TEXT NOT NULL, `computed_at_ms` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "participantId",
+            "columnName": "participant_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startMs",
+            "columnName": "start_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "endMs",
+            "columnName": "end_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timezoneId",
+            "columnName": "timezone_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "offsetSeconds",
+            "columnName": "offset_seconds",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "screenSeconds",
+            "columnName": "screen_s",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sessionsStarted",
+            "columnName": "sessions_started",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "longestRunSeconds",
+            "columnName": "longest_run_s",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "appSwitches",
+            "columnName": "app_switches",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "previousSessionSeconds",
+            "columnName": "prev_session_s",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "hour",
+            "columnName": "hour",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dayOfWeek",
+            "columnName": "dow",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "schemaVersion",
+            "columnName": "schema_version",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "revision",
+            "columnName": "revision",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "qualityStatus",
+            "columnName": "quality_status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "qualityReasons",
+            "columnName": "quality_reasons",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "computedAtMs",
+            "columnName": "computed_at_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_feature_windows_participant_id_start_ms_schema_version",
+            "unique": true,
+            "columnNames": [
+              "participant_id",
+              "start_ms",
+              "schema_version"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_feature_windows_participant_id_start_ms_schema_version` ON `${TABLE_NAME}` (`participant_id`, `start_ms`, `schema_version`)"
+          }
+        ]
+      },
+      {
+        "tableName": "predictions",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `window_id` INTEGER NOT NULL, `target_start_ms` INTEGER NOT NULL, `target_end_ms` INTEGER NOT NULL, `produced_at_ms` INTEGER NOT NULL, `model_version` TEXT NOT NULL, `score` REAL NOT NULL, `threshold` REAL NOT NULL, `decision` INTEGER NOT NULL, `quality_status` TEXT NOT NULL, `mode` TEXT NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "windowId",
+            "columnName": "window_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "targetStartMs",
+            "columnName": "target_start_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "targetEndMs",
+            "columnName": "target_end_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "producedAtMs",
+            "columnName": "produced_at_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "modelVersion",
+            "columnName": "model_version",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "score",
+            "columnName": "score",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "threshold",
+            "columnName": "threshold",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "decision",
+            "columnName": "decision",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "qualityStatus",
+            "columnName": "quality_status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "mode",
+            "columnName": "mode",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_predictions_window_id",
+            "unique": false,
+            "columnNames": [
+              "window_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_predictions_window_id` ON `${TABLE_NAME}` (`window_id`)"
+          }
+        ]
+      },
+      {
+        "tableName": "reminder_events",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `prediction_id` INTEGER NOT NULL, `target_start_ms` INTEGER NOT NULL, `scheduled_at_ms` INTEGER NOT NULL, `shown_at_ms` INTEGER, `suppressed_reason` TEXT, `user_action` TEXT, `policy_version` TEXT NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "predictionId",
+            "columnName": "prediction_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "targetStartMs",
+            "columnName": "target_start_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "scheduledAtMs",
+            "columnName": "scheduled_at_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "shownAtMs",
+            "columnName": "shown_at_ms",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "suppressedReason",
+            "columnName": "suppressed_reason",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "userAction",
+            "columnName": "user_action",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "policyVersion",
+            "columnName": "policy_version",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_reminder_events_prediction_id",
+            "unique": false,
+            "columnNames": [
+              "prediction_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_reminder_events_prediction_id` ON `${TABLE_NAME}` (`prediction_id`)"
+          }
+        ]
+      },
+      {
+        "tableName": "feedbacks",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `participant_id` TEXT NOT NULL, `window_id` INTEGER, `prediction_id` INTEGER, `window_start_ms` INTEGER NOT NULL, `window_end_ms` INTEGER NOT NULL, `answer` TEXT, `response_status` TEXT NOT NULL, `asked_at_ms` INTEGER NOT NULL, `answered_at_ms` INTEGER, `updated_at_ms` INTEGER, `question_version` TEXT NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "participantId",
+            "columnName": "participant_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "windowId",
+            "columnName": "window_id",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "predictionId",
+            "columnName": "prediction_id",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "windowStartMs",
+            "columnName": "window_start_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "windowEndMs",
+            "columnName": "window_end_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "answer",
+            "columnName": "answer",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "responseStatus",
+            "columnName": "response_status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "askedAtMs",
+            "columnName": "asked_at_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "answeredAtMs",
+            "columnName": "answered_at_ms",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "updatedAtMs",
+            "columnName": "updated_at_ms",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "questionVersion",
+            "columnName": "question_version",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_feedbacks_participant_id_window_start_ms_window_end_ms",
+            "unique": true,
+            "columnNames": [
+              "participant_id",
+              "window_start_ms",
+              "window_end_ms"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_feedbacks_participant_id_window_start_ms_window_end_ms` ON `${TABLE_NAME}` (`participant_id`, `window_start_ms`, `window_end_ms`)"
+          }
+        ]
+      },
+      {
+        "tableName": "app_settings",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `participant_id` TEXT NOT NULL, `collection_enabled` INTEGER NOT NULL, `reminders_enabled` INTEGER NOT NULL, `quiet_start_hour` INTEGER NOT NULL, `quiet_end_hour` INTEGER NOT NULL, `daily_cap` INTEGER NOT NULL, `consent_version` TEXT, `consent_time_ms` INTEGER, `last_checkpoint_ms` INTEGER, `schema_version` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "participantId",
+            "columnName": "participant_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "collectionEnabled",
+            "columnName": "collection_enabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "remindersEnabled",
+            "columnName": "reminders_enabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "quietStartHour",
+            "columnName": "quiet_start_hour",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "quietEndHour",
+            "columnName": "quiet_end_hour",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dailyCap",
+            "columnName": "daily_cap",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "consentVersion",
+            "columnName": "consent_version",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "consentTimeMs",
+            "columnName": "consent_time_ms",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "lastCheckpointMs",
+            "columnName": "last_checkpoint_ms",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "schemaVersion",
+            "columnName": "schema_version",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '6417966f76a4fc81df9a462cf565f124')"
+    ]
+  }
+}
