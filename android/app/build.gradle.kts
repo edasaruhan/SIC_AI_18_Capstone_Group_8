@@ -14,7 +14,7 @@ android {
         minSdk = 28
         targetSdk = 37
         versionCode = 1
-        versionName = "0.7.0-m08-m12"
+        versionName = "0.7.2-glance-fix"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

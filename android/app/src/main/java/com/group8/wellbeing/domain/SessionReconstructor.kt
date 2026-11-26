@@ -33,6 +33,7 @@ data class UsageSession(
 data class SessionReconstructionResult(
     val sessions: List<UsageSession>,
     val duplicateUnlockCount: Int,
+    val glanceTimestampsMs: List<Long>,
     val missingStartOffTimestampsMs: List<Long>,
     val continuityBreakTimestampsMs: List<Long>,
     val clockJumpTimestampsMs: List<Long>,
@@ -68,9 +69,11 @@ object SessionReconstructor {
             .toList()
 
         val sessions = mutableListOf<UsageSession>()
+        val glanceTimestamps = mutableListOf<Long>()
         val missingStartOffs = mutableListOf<Long>()
         val triggeredBreaks = mutableListOf<Long>()
         var duplicateUnlocks = 0
+        var sawInteractiveWhileClosed = false
 
         var mode = initialMode
         var currentStartMs: Long? = if (initialMode == SessionMachineMode.OPEN) {
@@ -83,6 +86,7 @@ object SessionReconstructor {
             while (breakIndex < sortedBreaks.size && sortedBreaks[breakIndex] <= limitMs) {
                 val breakMs = sortedBreaks[breakIndex]
                 breakIndex += 1
+                sawInteractiveWhileClosed = false
                 if (mode == SessionMachineMode.OPEN && currentStartMs != null && breakMs >= currentStartMs!!) {
                     val start = currentStartMs!!
                     val cappedEnd = minOf(breakMs, start + maxSessionDurationMs)
@@ -109,7 +113,13 @@ object SessionReconstructor {
         for (event in orderedEvents) {
             applyBreaksUpTo(event.timestampMs)
             when (event.eventType) {
+                NormalizedEventType.SCREEN_INTERACTIVE -> {
+                    if (mode == SessionMachineMode.CLOSED) {
+                        sawInteractiveWhileClosed = true
+                    }
+                }
                 NormalizedEventType.KEYGUARD_HIDDEN -> {
+                    sawInteractiveWhileClosed = false
                     when (mode) {
                         SessionMachineMode.CLOSED -> {
                             mode = SessionMachineMode.OPEN
@@ -142,14 +152,21 @@ object SessionReconstructor {
                             }
                             mode = SessionMachineMode.CLOSED
                             currentStartMs = null
+                            sawInteractiveWhileClosed = false
                         }
                         SessionMachineMode.UNKNOWN_START -> {
                             missingStartOffs.add(event.timestampMs)
                             mode = SessionMachineMode.CLOSED
                             currentStartMs = null
+                            sawInteractiveWhileClosed = false
                         }
                         SessionMachineMode.CLOSED -> {
-                            missingStartOffs.add(event.timestampMs)
+                            if (sawInteractiveWhileClosed) {
+                                glanceTimestamps.add(event.timestampMs)
+                                sawInteractiveWhileClosed = false
+                            } else {
+                                missingStartOffs.add(event.timestampMs)
+                            }
                         }
                     }
                 }
@@ -178,6 +195,7 @@ object SessionReconstructor {
         return SessionReconstructionResult(
             sessions = sessions,
             duplicateUnlockCount = duplicateUnlocks,
+            glanceTimestampsMs = glanceTimestamps,
             missingStartOffTimestampsMs = missingStartOffs,
             continuityBreakTimestampsMs = triggeredBreaks,
             clockJumpTimestampsMs = clockJumps,

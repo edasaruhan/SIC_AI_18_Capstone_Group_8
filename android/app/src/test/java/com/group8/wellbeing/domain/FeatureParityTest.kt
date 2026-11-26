@@ -285,4 +285,25 @@ class FeatureParityTest {
         assertEquals(600.0, windows[0].features.screenSeconds, tolerance)
         assertEquals(1, windows[0].features.sessionsStarted)
     }
+
+    @Test
+    fun lockedScreenGlanceIsTrackedSeparatelyAndNotMarkedMissingSessionStart() {
+        val wStart = ms(2026, 11, 25, 10, 0)
+        val wEnd = ms(2026, 11, 25, 10, 30)
+        val events = listOf(
+            DomainUsageEvent(ms(2026, 11, 25, 10, 5, 0), NormalizedEventType.SCREEN_INTERACTIVE),
+            DomainUsageEvent(ms(2026, 11, 25, 10, 5, 6), NormalizedEventType.SCREEN_NON_INTERACTIVE)
+        )
+        val reconstructed = SessionReconstructor.reconstruct(events, cutoffMs = wEnd)
+        assertEquals(0, reconstructed.sessions.size)
+        assertEquals(1, reconstructed.glanceTimestampsMs.size)
+        assertEquals(0, reconstructed.missingStartOffTimestampsMs.size)
+
+        val windows = FeatureWindowCalculator.computeWindows(events, wStart, wEnd, wEnd, istanbul)
+        assertEquals(1, windows.size)
+        assertEquals(0.0, windows[0].features.screenSeconds, tolerance)
+        assertEquals(0, windows[0].features.sessionsStarted)
+        assertEquals(WindowQualityStatus.OBSERVATION_SUFFICIENT, windows[0].qualityStatus)
+        assertTrue(windows[0].qualityReasons.isEmpty())
+    }
 }
