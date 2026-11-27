@@ -7,10 +7,10 @@
 | Alan | Güncel kayıt |
 | --- | --- |
 | Current Stage | Aşama 7 devam ediyor. Genel model ve isteğe bağlı Android hatırlatma gönderimi Pixel 8 ARM64 emülatöründe doğrulandı. Prototip için teknik bitiş hedefi 29 Kasım, final sunumu 1 Aralık 2026. Aşama 5 henüz başlamadı. |
-| Current Task | Fold_1 XGBoost cihazın CPU'sunda tahmin üretiyor. Manuel sorgu ve WorkManager, model kaydından sonra aynı hatırlatma politikasını çağırıyor. [Android teslim ve test notu](mobile_model_export.md). |
-| Last Completed Task | Pixel 8 API 37 ARM64 üzerinde 40 birim ve 5 emülatör testi geçti. T20'de sıfır karar farkı. Zamanında pozitif tahmin tek Android bildirimi üretti. Gecikmiş ve kapalı ayar senaryoları bastırıldı. Aynı imzayla APK güncellemesi yerel kayıtları korudu. |
-| Next Action | Murat'ın fiziksel cihazında güncelleme ve kullanım hatırlatması akışını doğrula. Pilot ZIP'i gelince uygun pencere ve etiket kapsamını incele. |
-| Current Blockers | Fiziksel cihazda arka plan zamanlaması ve pil etkisi açık. Kişiselleştirme için pilot veri, v1 uzun oturum etiketinin erişilebilirlik zamanı ve kronolojik protokol gerekli. |
+| Current Task | Mevcut APK/ZIP sözleşmesiyle kısa telefon pilotu yürütülüyor. İlk dışa aktarım, sabit fold_1 XGBoost üzerinde geri bildirime göre aday karar eşiği seçmek için geçmiş veri olarak kullanıldı. |
+| Last Completed Task | Uygun girdi pencereleri sonraki pencerenin açık Evet/Hayır yanıtıyla eşlendi. Repodaki eşik listesi ve F1 eşitlik kuralıyla aday belirlendi. Seçim ve karşılaştırma kuralı yerel kayıtta sabitlendi. |
+| Next Action | Yeni ZIP geldiğinde [pilot değerlendirmesi](../src/models/pilot_holdout.py) ile kaynak sürümünü, kullanıcı eşleşmesini ve pencere kalitesini kontrol et. İlk dışa aktarımın tamamlanmasından sonra başlayan, daha önce görülmemiş girdilerde `0.25` ile sabit aday eşiğini aynı sonraki pencere yanıtlarında değerlendir. |
+| Current Blockers | Yeni ZIP ile bağımsız eşik değerlendirmesi açık. İlk ZIP'te onam zamanı dışa aktarılmadı ve çok sayıda pencere `MISSING_SESSION_START` olarak işaretli. Ağırlıklı yeniden eğitim için eşdeğer v1 proxy etiketi gerekli. Fiziksel cihazda arka plan zamanlaması ve pil etkisi açık. |
 
 ## Kaynaklar ve kapsam
 
@@ -254,6 +254,9 @@ Fold_1 XGBoost [teslim paketi](mobile_model_export.md) masaüstünde ve Pixel 8 
 | 26 Kasım 2026 | Prototip için önceden belirlenen fold_1 XGBoost modeli, eğitim medyanları ve `0.25` eşiğiyle ONNX'e aktarıldı. | [Teslim kaydı](mobile_model_export.md). 362.255 gerçek pencerede maksimum mutlak skor farkı 6,56 × 10⁻⁷ ve sıfır karar farkı. 16 golden örnek, 128 eksiklik maskesi ve 88 test geçti. Android T20 açık. |
 | 26 Kasım 2026 | ONNX paketi Kotlin `Predictor` arayüzüne ve ortak Room kayıt yoluna bağlandı. | [Mobil test kaydı](mobile_model_export.md). Pixel 8 API 37 ARM64 üzerinde T20, 16 sentetik girdi, sıfır karar farkı, 4,17 × 10⁻⁷ maksimum skor farkı. 40 birim testi ve 3 emülatör testi geçti. |
 | 26 Kasım 2026 | Model tahmininden Android hatırlatma gönderimine bağlantı eklendi. Hatırlatmalar gönüllü ayarla etkinleştirilir. | [Android doğrulaması](../android/README.md#kullanım-hatırlatmaları). Gerçek model, sentetik olay dizisiyle zamanında pozitif tahmin ve tek bildirim üretti. Gecikmiş ve kapalı ayar kontrolleri geçti. Fiziksel pilot açık. |
+| 27 Kasım 2026 | İlk telefon dışa aktarımı için şema, gözlem kalitesi, sonraki pencere eşlemesi ve geri bildirimin erişilebilirlik zamanı incelendi. Kayıtlı fold_1 modelinin kararları Python ve ONNX'te eşleşti. | Aynı APK kalite koşulları uygulandığında kişiye özel eşiği seçmek ve sonraki ayrı yanıtlarda değerlendirmek için uygun kronolojik ayrım bulunmadı. Katılımcı dosyaları ve satır düzeyi skorlar yerel. |
+| 27 Kasım 2026 | İlk dışa aktarım geçmiş veri kabul edilerek geri bildirime göre aday eşik seçildi. Mevcut eşik listesinde Evet sınıfı için F1 eniyilendi ve eşitlikte yüksek eşik seçildi. | Aday, model kimliği ve yeni veri değerlendirme kuralı yerel kayıtta sabitlendi. Seçim verisindeki sonuçlar betimleyici. Yeni veriyle doğrulama açık. |
+| 27 Kasım 2026 | Ayrı pilot dışa aktarımında sabit eşikleri karşılaştıran [değerlendirme kodu](../src/models/pilot_holdout.py) hazırlandı. | İlk ZIP'in test verisi olarak yeniden kullanımı reddedildi. Sentetik testler önceki ve belirsiz pencere dışlaması, sonraki pencere eşlemesi ve sınıf sayımlarını kapsıyor. Yeni ZIP değerlendirmesi açık. |
 
 ### Kişiselleştirme öncesi açık kararlar
 
