@@ -23,8 +23,8 @@ Bu belge, Adaptive Digital Wellbeing Coach Android uygulamasının aşamalı gel
 | M08 | Arka plan toplama (`WorkManager`) | Tamamlandı | 15 dk tekil periyodik iş, güvenli örtüşme, gecikmiş iş ayrımı |
 | M09 | Dönem ayrıntısı ve geri bildirim | Tamamlandı | Açık zaman aralıklı Evet / Hayır / Atla / Cevapsız ayrımı |
 | M10 | Python–Kotlin özellik eşliği | Tamamlandı | `src/data/mpu_pipeline.py` ile `F01–F12` üzerinde 0,000 sn farkla eşleşti |
-| M11 | Mobil model adaptörü | Sınır hazır (model bekleniyor) | Sürüm/şema korumalı `Predictor` arayüzü hazır; gerçek model Kaan/Yiğit teslimine bağlı |
-| M12 | Hatırlatma politikası | Politika hazır (model bekleniyor) | Günlük 3 sınır, 60 dk bekleme, 23:00–08:00 sessiz saat, bastırma nedeni kaydı |
+| M11 | Mobil model adaptörü | Emülatörde doğrulandı | Fold_1 XGBoost, ONNX Runtime CPU ile bağlı. T20 geçti ve tahminler Room'a kaydediliyor. |
+| M12 | Hatırlatma politikası | Gönderim emülatörde doğrulandı | İsteğe bağlı Android bildirimi, günlük 3 sınır, 60 dk bekleme, 23:00–08:00 sessiz saat ve bastırma nedeni kaydı. Fiziksel cihaz zamanlaması açık. |
 | M13 | Dışa aktarım ve veri yönetimi | Tamamlandı | SAF ile UTF-8 CSV + JSON manifest ZIP dışa aktarımı |
 | M14 | Gerçek cihaz denemesi ve pilot | Devam ediyor | İlk gerçek cihaz doğrulaması geçti; 24 saatlik deneme ve gönüllü testleri sürüyor |
 | M15 | Teknik teslim ve gösterim | Planlandı | 24 saatlik deneme ve varsa model entegrasyonu sonrası final kanıt paketi |
@@ -55,12 +55,12 @@ Bu belge, Adaptive Digital Wellbeing Coach Android uygulamasının aşamalı gel
 | T16 | Reboot, ilk kilit açılışı ve force stop davranışı | Fiziksel cihaz denemesinde (M14) |
 | T17–T18 | Evet/Hayır/Atla/Cevapsız ve bildirim kapatma ayrımı | Geçti (birim testi + cihaz) |
 | T19 | Model/şema sürüm uyumsuzluğu reddi | Geçti (birim testi) |
-| T20 | Gerçek Python–mobil model skor karşılaştırması | Kaan/Yiğit model teslimi bekleniyor |
+| T20 | Gerçek Python–mobil model skor karşılaştırması | Pixel 8 API 37 ARM64 emülatöründe 16 sentetik girdide sıfır karar farkı, maksimum skor farkı 4,17 × 10⁻⁷. |
 | T21 | Sessiz saat, günlük sınır ve bekleme süresi | Geçti (birim testi) |
 | T22–T24 | Duraklat/devam, tüm verileri sil ve dışa aktarım doğrulaması | Geçti (birim testi) |
 | T25 | 24 saatlik gerçek cihaz çalışması ve ölçüm raporu | Devam ediyor (M14) |
 
 ## 5. Ekip Bağımlılıkları
 - **İsmail (`src/data/mpu_pipeline.py`):** Oturum ve 7 özellik referansı (eşlik doğrulandı).
-- **Kaan ve Yiğit (`M11`):** Mobil model dosyası, ön işleme parametreleri, karar eşiği ve örnek skorlar.
+- **Kaan ve Yiğit (`M11`):** [Mobil paket ve skor eşliği kanıtı](../documents/mobile_model_export.md). Fiziksel cihaz doğrulaması sonraki aşamada.
 - **Hamza (`M14`):** Pilot verisi ve geri bildirim/proxy uyum değerlendirmesi.

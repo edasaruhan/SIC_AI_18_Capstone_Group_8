@@ -474,6 +474,11 @@ class MainViewModelTest {
             return snapshot
         }
 
+        override fun setRemindersEnabled(enabled: Boolean): ControlSnapshot {
+            snapshot = snapshot.copy(remindersEnabled = enabled)
+            return snapshot
+        }
+
         override fun deleteAllLocalData(): ControlSnapshot {
             idCounter += 1
             snapshot = ControlSnapshot(

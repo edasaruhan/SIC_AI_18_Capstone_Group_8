@@ -1,8 +1,50 @@
+import javax.inject.Inject
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.room)
+}
+
+abstract class StageModelAssets : DefaultTask() {
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val packageFiles: ConfigurableFileCollection
+
+    @get:OutputDirectory
+    abstract val outputDirectory: DirectoryProperty
+
+    @get:Inject
+    abstract val fileSystem: FileSystemOperations
+
+    @TaskAction
+    fun stageAssets() {
+        fileSystem.sync {
+            into(outputDirectory)
+            from(packageFiles) { into("general_model") }
+        }
+    }
+}
+
+val mobileModelDirectory = rootProject.file("../models/mobile/dataset_v1-xgboost-fold-1-v1")
+val stageModelAssets = tasks.register<StageModelAssets>("stageModelAssets") {
+    packageFiles.from(mobileModelDirectory.resolve("model.onnx"),
+        mobileModelDirectory.resolve("manifest.json"), mobileModelDirectory.resolve("feature_schema.json"))
+    outputDirectory.set(layout.buildDirectory.dir("generated/modelAssets/main"))
+}
+val stageGoldenSamples = tasks.register<StageModelAssets>("stageGoldenSamples") {
+    packageFiles.from(mobileModelDirectory.resolve("golden_samples.json"))
+    outputDirectory.set(layout.buildDirectory.dir("generated/modelAssets/androidTest"))
+}
+
+androidComponents {
+    onVariants { variant ->
+        variant.sources.assets?.addGeneratedSourceDirectory(stageModelAssets, StageModelAssets::outputDirectory)
+        variant.androidTest?.sources?.assets?.addGeneratedSourceDirectory(
+            stageGoldenSamples, StageModelAssets::outputDirectory
+        )
+    }
 }
 
 android {
@@ -13,8 +55,8 @@ android {
         applicationId = "com.group8.wellbeing"
         minSdk = 28
         targetSdk = 37
-        versionCode = 1
-        versionName = "0.7.0-m08-m12"
+        versionCode = 2
+        versionName = "0.8.0-m11-m12"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -36,6 +78,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -57,8 +100,10 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.onnxruntime.android)
     ksp(libs.androidx.room.compiler)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+    androidTestImplementation(libs.androidx.test.runner)
     debugImplementation(libs.androidx.ui.tooling)
 }

@@ -5,6 +5,7 @@ import com.group8.wellbeing.data.local.AppSettingsEntity
 import com.group8.wellbeing.data.local.CollectionBatchEntity
 import com.group8.wellbeing.data.local.FeatureWindowEntity
 import com.group8.wellbeing.data.local.FeedbackEntity
+import com.group8.wellbeing.data.local.PredictionEntity
 import com.group8.wellbeing.data.local.RawUsageEventEntity
 import com.group8.wellbeing.data.local.WellbeingDatabase
 import com.group8.wellbeing.domain.DomainUsageEvent
@@ -14,6 +15,11 @@ import com.group8.wellbeing.domain.FeedbackRecord
 import com.group8.wellbeing.domain.FeedbackResponseStatus
 import com.group8.wellbeing.domain.QualityIssueInterval
 import com.group8.wellbeing.domain.WindowQualityReason
+import com.group8.wellbeing.inference.DisabledPredictor
+import com.group8.wellbeing.inference.PredictionOutcome
+import com.group8.wellbeing.inference.PredictionRunner
+import com.group8.wellbeing.inference.Predictor
+import com.group8.wellbeing.reminders.ReminderDelivery
 import com.group8.wellbeing.usage.NormalizedEventType
 import com.group8.wellbeing.usage.UsageQueryBatchResult
 import com.group8.wellbeing.usage.UsageQueryErrorCode
@@ -34,10 +40,16 @@ data class BatchPersistenceSummary(
     val stats: StorageStats
 )
 
+data class PredictionStatus(
+    val modelVersion: String? = null,
+    val latest: PredictionEntity? = null
+)
+
 interface LocalDataRepository {
     suspend fun readStorageStats(participantId: String): StorageStats
     suspend fun readFeatureWindows(participantId: String): List<FeatureWindowEntity>
     suspend fun readFeedbacks(participantId: String): List<FeedbackEntity>
+    suspend fun readPredictionStatus(participantId: String): PredictionStatus = PredictionStatus()
     suspend fun persistCollectionBatch(
         participantId: String,
         consentVersion: String?,
@@ -65,7 +77,10 @@ interface LocalDataRepository {
 }
 
 class RoomWellbeingRepository(
-    private val database: WellbeingDatabase
+    private val database: WellbeingDatabase,
+    private val predictorProvider: () -> Predictor = { DisabledPredictor },
+    private val nowMsProvider: () -> Long = System::currentTimeMillis,
+    private val reminderDelivery: ReminderDelivery? = null
 ) : LocalDataRepository {
     private val dao = database.wellbeingDao()
 
@@ -92,6 +107,13 @@ class RoomWellbeingRepository(
         return dao.getAllFeedbacks(participantId)
     }
 
+    override suspend fun readPredictionStatus(participantId: String): PredictionStatus {
+        val predictor = predictorProvider()
+        if (!predictor.isReady || !predictor.metadata.isRealModel) return PredictionStatus()
+        val version = predictor.metadata.modelVersion
+        return PredictionStatus(version, dao.getLatestPrediction(participantId, version))
+    }
+
     override suspend fun persistCollectionBatch(
         participantId: String,
         consentVersion: String?,
@@ -100,7 +122,12 @@ class RoomWellbeingRepository(
         batch: UsageQueryBatchResult,
         zoneId: ZoneId
     ): BatchPersistenceSummary {
-        return database.withTransaction {
+        val predictor = if (collectionEnabled && batch.errorCode == UsageQueryErrorCode.NONE) {
+            predictorProvider()
+        } else {
+            DisabledPredictor
+        }
+        val result = database.withTransaction {
             val entities = batch.events.map { event ->
                 RawUsageEventEntity(
                     participantId = participantId,
@@ -193,7 +220,7 @@ class RoomWellbeingRepository(
                     schemaVersion = computed.schemaVersion
                 )
                 val nextRevision = if (existing != null) existing.revision + 1 else 1
-                dao.upsertFeatureWindow(
+                val windowId = dao.upsertFeatureWindow(
                     FeatureWindowEntity(
                         id = existing?.id ?: 0L,
                         participantId = participantId,
@@ -215,6 +242,37 @@ class RoomWellbeingRepository(
                         computedAtMs = batch.collectedAtMs
                     )
                 )
+                if (predictor.isReady && predictor.metadata.isRealModel &&
+                    !dao.hasPrediction(windowId, predictor.metadata.modelVersion)
+                ) {
+                    val targetStartMs = computed.endMs
+                    val targetEndMs = targetStartMs + AppConfig.WINDOW_DURATION_MS
+                    val producedAtMs = nowMsProvider()
+                    val outcome = PredictionRunner.evaluate(
+                        predictor = predictor,
+                        vector = computed.features,
+                        qualityStatus = computed.qualityStatus,
+                        targetStartMs = targetStartMs,
+                        producedAtMs = producedAtMs,
+                        isReplay = producedAtMs >= targetEndMs
+                    )
+                    if (outcome is PredictionOutcome.Success) {
+                        dao.insertPrediction(
+                            PredictionEntity(
+                                windowId = windowId,
+                                targetStartMs = targetStartMs,
+                                targetEndMs = targetEndMs,
+                                producedAtMs = outcome.producedAtMs,
+                                modelVersion = outcome.modelVersion,
+                                score = outcome.score,
+                                threshold = outcome.threshold,
+                                decision = outcome.decision,
+                                qualityStatus = computed.qualityStatus.name,
+                                mode = outcome.mode.name
+                            )
+                        )
+                    }
+                }
             }
 
             val existingSettings = dao.getSettings()
@@ -229,7 +287,8 @@ class RoomWellbeingRepository(
                     id = 1,
                     participantId = participantId,
                     collectionEnabled = collectionEnabled,
-                    remindersEnabled = existingSettings?.remindersEnabled ?: false,
+                    remindersEnabled = reminderDelivery?.remindersEnabled(participantId)
+                        ?: existingSettings?.remindersEnabled ?: false,
                     quietStartHour = existingSettings?.quietStartHour ?: AppConfig.QUIET_START_HOUR,
                     quietEndHour = existingSettings?.quietEndHour ?: AppConfig.QUIET_END_HOUR,
                     dailyCap = existingSettings?.dailyCap ?: AppConfig.DAILY_REMINDER_CAP,
@@ -245,6 +304,8 @@ class RoomWellbeingRepository(
             val derivedRetentionCutoffMs =
                 batch.collectedAtMs - AppConfig.DERIVED_RETENTION_DAYS * 86_400_000L
             dao.deleteRawEventsBefore(rawRetentionCutoffMs)
+            dao.deleteRemindersForExpiredWindows(derivedRetentionCutoffMs)
+            dao.deletePredictionsForExpiredWindows(derivedRetentionCutoffMs)
             dao.deleteFeatureWindowsBefore(derivedRetentionCutoffMs)
             dao.deleteFeedbacksBefore(derivedRetentionCutoffMs)
 
@@ -261,6 +322,12 @@ class RoomWellbeingRepository(
                 )
             )
         }
+        if (reminderDelivery != null && collectionEnabled && batch.errorCode == UsageQueryErrorCode.NONE) {
+            readPredictionStatus(participantId).latest?.let { prediction ->
+                reminderDelivery.deliver(participantId, prediction, zoneId)
+            }
+        }
+        return result
     }
 
     override suspend fun saveFeedback(

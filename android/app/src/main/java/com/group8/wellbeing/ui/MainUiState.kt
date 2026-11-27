@@ -57,6 +57,13 @@ data class ExportPreviewUi(
     val dateRangeText: String
 )
 
+data class ModelPredictionUi(
+    val targetLabel: String,
+    val scoreLabel: String,
+    val modeLabel: String,
+    val elevatedUsage: Boolean
+)
+
 data class MainUiState(
     val appTitle: String = "Adaptive Digital Wellbeing Coach",
     val darkThemeEnabled: Boolean = true,
@@ -71,6 +78,7 @@ data class MainUiState(
     val nextStepMessage: String = "",
     val usagePermissionState: UsagePermissionState = UsagePermissionState.REQUIRED,
     val notificationPermissionState: NotificationPermissionState = NotificationPermissionState.NOT_REQUIRED,
+    val remindersEnabled: Boolean = false,
     val pausedByUser: Boolean = false,
     val backgroundWorkScheduled: Boolean = false,
     val showDeleteDialog: Boolean = false,
@@ -85,5 +93,7 @@ data class MainUiState(
     val selectedLookbackMinutes: Int = 120,
     val lastQuerySummary: QuerySummaryUi? = null,
     val inspectedEvents: List<InspectedEventUi> = emptyList(),
-    val periodItems: List<PeriodItemUi> = emptyList()
+    val periodItems: List<PeriodItemUi> = emptyList(),
+    val modelVersion: String? = null,
+    val latestPrediction: ModelPredictionUi? = null
 )

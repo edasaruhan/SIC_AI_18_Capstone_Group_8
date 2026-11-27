@@ -3,18 +3,21 @@ package com.group8.wellbeing.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.group8.wellbeing.BuildConfig
 import com.group8.wellbeing.data.AppConfig
 import com.group8.wellbeing.data.ControlSnapshot
 import com.group8.wellbeing.data.ControlStore
 import com.group8.wellbeing.data.ExportFormatter
 import com.group8.wellbeing.data.ExportPayload
 import com.group8.wellbeing.data.LocalDataRepository
+import com.group8.wellbeing.data.PredictionStatus
 import com.group8.wellbeing.data.StorageStats
 import com.group8.wellbeing.data.local.FeatureWindowEntity
 import com.group8.wellbeing.data.local.FeedbackEntity
 import com.group8.wellbeing.domain.CollectionStateResolver
 import com.group8.wellbeing.domain.FeedbackAnswer
 import com.group8.wellbeing.domain.FeedbackResponseStatus
+import com.group8.wellbeing.inference.PredictionMode
 import com.group8.wellbeing.usage.NormalizedEventType
 import com.group8.wellbeing.usage.NotificationPermissionState
 import com.group8.wellbeing.usage.UsageEventReader
@@ -38,7 +41,7 @@ class MainViewModel(
     private val localDataRepository: LocalDataRepository? = null,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val collectionScheduler: CollectionScheduler? = null,
-    private val appVersion: String = "0.7.0-m08-m12",
+    private val appVersion: String = BuildConfig.VERSION_NAME,
     private val nowMsProvider: () -> Long = { System.currentTimeMillis() }
 ) : ViewModel() {
     private val mutableUiState = MutableStateFlow(MainUiState())
@@ -49,6 +52,7 @@ class MainViewModel(
     private var errorMessage: String? = null
     private var latestStats: StorageStats = StorageStats()
     private var latestPeriods: List<PeriodItemUi> = emptyList()
+    private var predictionStatus = PredictionStatus()
     private var pendingExportPayload: ExportPayload? = null
 
     fun syncPermissions(
@@ -114,6 +118,12 @@ class MainViewModel(
         publish(controlStore.read(), notice = notice)
     }
 
+    fun setRemindersEnabled(enabled: Boolean) {
+        if (!controlStore.read().isConsentAccepted) return
+        val snapshot = controlStore.setRemindersEnabled(enabled)
+        publish(snapshot, notice = if (enabled) "Kullanım hatırlatmaları açıldı." else "Kullanım hatırlatmaları kapatıldı.")
+    }
+
     fun pauseCollection() {
         val snapshot = controlStore.pauseCollection(nowMsProvider())
         publish(
@@ -146,6 +156,7 @@ class MainViewModel(
         val snapshot = controlStore.deleteAllLocalData()
         latestStats = StorageStats()
         latestPeriods = emptyList()
+        predictionStatus = PredictionStatus()
         pendingExportPayload = null
         viewModelScope.launch(ioDispatcher) {
             localDataRepository?.clearAllLocalData()
@@ -409,6 +420,10 @@ class MainViewModel(
         val windows = repository.readFeatureWindows(snapshot.participantId)
         val feedbacks = repository.readFeedbacks(snapshot.participantId)
         latestPeriods = mapPeriods(windows, feedbacks)
+        val status = repository.readPredictionStatus(snapshot.participantId)
+        if (controlStore.read().participantId == snapshot.participantId) {
+            predictionStatus = status
+        }
     }
 
     private fun mapPeriods(
@@ -477,6 +492,7 @@ class MainViewModel(
             nextStepMessage = resolved.nextStepMessage,
             usagePermissionState = lastUsagePermission,
             notificationPermissionState = lastNotificationPermission,
+            remindersEnabled = snapshot.remindersEnabled,
             pausedByUser = snapshot.pausedByUser,
             backgroundWorkScheduled = collectionScheduler?.isScheduled() ?: false,
             showDeleteDialog = showDeleteDialog,
@@ -490,7 +506,20 @@ class MainViewModel(
             lastCheckpointText = latestStats.lastCheckpointMs?.let { formatDateTime(it) } ?: "Henüz kayıt yok",
             lastQuerySummary = if (clearInspector) null else querySummary,
             inspectedEvents = if (clearInspector) emptyList() else inspectedEvents,
-            periodItems = latestPeriods
+            periodItems = latestPeriods,
+            modelVersion = predictionStatus.modelVersion,
+            latestPrediction = predictionStatus.latest?.let { prediction ->
+                ModelPredictionUi(
+                    targetLabel = "${formatDateTime(prediction.targetStartMs)} – ${formatHourMinute(prediction.targetEndMs)}",
+                    scoreLabel = String.format(Locale.getDefault(), "%.6f", prediction.score),
+                    modeLabel = when (prediction.mode) {
+                        PredictionMode.LIVE.name -> "Zamanında"
+                        PredictionMode.DELAYED.name -> "Gecikmeli"
+                        else -> "Geçmişe dönük"
+                    },
+                    elevatedUsage = prediction.decision
+                )
+            }
         )
     }
 
