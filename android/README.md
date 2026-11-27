@@ -45,12 +45,32 @@ $env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"
 5. Gerçek cihazda veya emülatörde kurulum için Android Studio'dan **Run** kullanın veya `adb install -r app\build\outputs\apk\debug\app-debug.apk` komutunu çalıştırın.
 6. **Android 13+ APK kurulum notu (Kısıtlı Ayarlar):** APK doğrudan telefona kurulduğunda *Kullanım Erişimi* anahtarı kilitli görünürse, uygulamadaki **Uygulama Bilgilerini Aç** butonundan (veya Ayarlar → Uygulamalar → Adaptive Digital Wellbeing Coach → menü/en alt) **"Kısıtlı ayarlara izin ver"** seçeneğini onaylayıp Kullanım Erişimi ayarını açın.
 
+### Genel model ve T20 testi
+
+Gradle, repo kökündeki `models/mobile/dataset_v1-xgboost-fold-1-v1/` yerel paketinden model, manifest ve özellik şemasını APK'ya ekler. Üretim komutları ve sözleşme [model teslim notunda](../documents/mobile_model_export.md). Paket bulunamadığında durum ekranı modeli kapalı gösterir ve veri toplama çalışmaya devam eder.
+
+Pixel 8 ARM64 emülatörü açıkken `android/` dizininden çalıştırın:
+
+```bash
+bash ./gradlew :app:assembleDebug :app:testDebugUnitTest
+bash ./gradlew :app:connectedDebugAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.group8.wellbeing.inference.OnnxPredictorT20Test
+```
+
+T20, sentetik golden örnekleri yalnızca test APK'sına alır. Python skorlarıyla eşlik, özellik şeması ve kalite kontrolleri, hedef pencere kaydı ve tekrarlı sorgu davranışı sınanır.
+
+### Kullanım hatırlatmaları
+
+`0.8.0-m11-m12` sürümünde **Durum → Kullanım hatırlatmaları** varsayılan olarak kapalıdır. Kullanıcı açtığında, yalnızca modelin hedef pencerenin ilk beş dakikasında ürettiği pozitif tahmin mevcut izin, kalite, sessiz saat, günlük sınır ve bekleme kontrollerini geçerse Android bildirimi çıkar. Arka plan toplama gecikirse o pencerenin bildirimi bastırılır. Tamamlanan dönemlerin Evet/Hayır geri bildirimi **Dönemler** ekranında verilir.
+
+Pixel 8 API 37 ARM64 üzerinde 40 birim ve 5 emülatör testi geçti. [Bildirim entegrasyon testi](app/src/androidTest/java/com/group8/wellbeing/inference/ReminderDeliveryTest.kt), Kullanım Erişimi ve bildirim izni verilmiş test profiliyle çalışır. Gerçek ONNX modelinin zamanında pozitif tahmini Android bildirim yöneticisinde tek bildirim oluşturdu. Gecikmeli ve kapalı ayar senaryolarında bildirim bastırıldı. Aynı imzalı önceki XGBoost APK'sı üzerine güncellemede onam, Kullanım Erişimi ve Room kayıtları korundu.
+
 ## İzinler ve gizlilik sınırları
 
 - `android.permission.PACKAGE_USAGE_STATS` manifestte tanımlıdır; ancak tek başına erişim vermez, M02 ile sistem ayarlarından kullanıcı izni ve ayrı onam akışı eklenecektir.
 - `android:allowBackup="false"` ayarı ile yerel verilerin Android otomatik yedekleme üzerinden buluta taşınması engellenmiştir.
 - Onam alınmadan kullanım geçmişi sorgulanmaz; gerçek kullanım kayıtları, geri bildirimler, `local.properties`, derleme çıktıları ve imzalama anahtarları depoya eklenmez.
-- Model dosyası bağlı olmadığından arayüzde sahte risk skoru gösterilmez. ONNX Runtime Mobile veya alternatif mobil format seçimi M11 aşamasında yapılacaktır.
+- Genel model yüklendiğinde skor Android CPU'sunda hesaplanır. Uygulama, mevcut kalite kontrollerini geçen pencerelerin skorunu Room'da saklar ve son hedef aralığını durum ekranında gösterir.
 
 ## Çalışma ve doğrulama kaydı
 

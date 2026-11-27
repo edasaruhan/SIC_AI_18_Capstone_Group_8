@@ -20,11 +20,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.group8.wellbeing.domain.CollectionStatus
 import com.group8.wellbeing.domain.FeedbackAnswer
@@ -48,6 +51,7 @@ fun MainScreen(
     onOpenUsageAccessSettings: () -> Unit,
     onOpenAppDetailsSettings: () -> Unit,
     onRequestNotificationPermission: () -> Unit,
+    onSetRemindersEnabled: (Boolean) -> Unit,
     onPauseCollection: () -> Unit,
     onResumeCollection: () -> Unit,
     onManualCheckClick: () -> Unit,
@@ -103,6 +107,7 @@ fun MainScreen(
                     onOpenUsageAccessSettings = onOpenUsageAccessSettings,
                     onOpenAppDetailsSettings = onOpenAppDetailsSettings,
                     onRequestNotificationPermission = onRequestNotificationPermission,
+                    onSetRemindersEnabled = onSetRemindersEnabled,
                     onPauseCollection = onPauseCollection,
                     onResumeCollection = onResumeCollection,
                     onManualCheckClick = onManualCheckClick,
@@ -252,6 +257,7 @@ private fun StatusTabContent(
     onOpenUsageAccessSettings: () -> Unit,
     onOpenAppDetailsSettings: () -> Unit,
     onRequestNotificationPermission: () -> Unit,
+    onSetRemindersEnabled: (Boolean) -> Unit,
     onPauseCollection: () -> Unit,
     onResumeCollection: () -> Unit,
     onManualCheckClick: () -> Unit,
@@ -334,9 +340,18 @@ private fun StatusTabContent(
             HorizontalDivider(color = MaterialTheme.colorScheme.outline)
             StatusRow(
                 label = "Model durumu",
-                value = "Bağlı değil (kapalı)",
-                isPositive = false
+                value = if (state.modelVersion != null) "Cihazda hazır" else "Bağlı değil (kapalı)",
+                isPositive = state.modelVersion != null
             )
+            state.latestPrediction?.let { prediction ->
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+                val result = if (prediction.elevatedUsage) "Yüksek kullanım sinyali" else "Düşük kullanım sinyali"
+                StatusRow(
+                    label = "Son model tahmini",
+                    value = "${prediction.targetLabel}\n$result · ${prediction.scoreLabel}\n${prediction.modeLabel}",
+                    isPositive = !prediction.elevatedUsage
+                )
+            }
             HorizontalDivider(color = MaterialTheme.colorScheme.outline)
             StatusRow(
                 label = "Son başarılı kayıt",
@@ -415,6 +430,19 @@ private fun StatusTabContent(
         ) {
             Text(text = "Bildirim İzni İste (İsteğe Bağlı)")
         }
+    }
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text("Kullanım hatırlatmaları", style = MaterialTheme.typography.bodyLarge)
+        Switch(
+            checked = state.remindersEnabled,
+            onCheckedChange = onSetRemindersEnabled,
+            modifier = Modifier.semantics { contentDescription = "Kullanım hatırlatmaları" }
+        )
     }
 
     if (state.usagePermissionState == UsagePermissionState.GRANTED) {
@@ -504,7 +532,7 @@ private fun PeriodsTabContent(
         color = MaterialTheme.colorScheme.surfaceVariant
     ) {
         Text(
-            text = "Model henüz bağlı değil; tahmin skoru kapalı. Aşağıda tamamlanan 30 dakikalık dönemleri inceleyip kendi değerlendirmenizi kaydedebilirsiniz.",
+            text = "Tamamlanan 30 dakikalık dönemleri inceleyip kendi değerlendirmenizi kaydedebilirsiniz.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(14.dp)

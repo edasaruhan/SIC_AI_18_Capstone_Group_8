@@ -6,11 +6,11 @@
 
 | Alan | Güncel kayıt |
 | --- | --- |
-| Current Stage | Aşama 3 tamamlandı: RF/XGBoost model API'si ve örnek ağırlığı desteği doğrulandı. Aşama 4 ve 8 devam ediyor; Aşama 5 henüz başlamadı. Aşama 1'in ortak sözleşme kararları açık. |
-| Current Task | İsmail'in `dataset_v1` tablosunda genel model iyileştirme araştırması tamamlandı; yöntem ve sonuçlar [Model Refinement and Test Submission raporunda](model_refinement_test_submission.pdf) sunuluyor. |
-| Last Completed Task | [Yeni deney](../src/models/refinement_exploration.py), [ağaç model API'si](../src/models/tree_models.py) ve [toplu sonuçlar](../reports/model_refinement_dataset_v1/results.json): 330 uygun kullanıcı, 362.255 çift, sınırlı doğrulama araması, 86 başarılı test, 9 modelde kaydet/yükle eşliği. Önceki raporlar korundu. |
-| Next Action | İsmail/Hamza ile kişiselleştirme öncesi sınırlı hedef veya etiketin erişilebilirlik zamanı kararını netleştir; açık veride 1/3/7/14 kayıt günü uygunluğunu incele. Yeni pilot verisini beklemek çevrimdışı kişiselleştirmenin önkoşulu değil. |
-| Current Blockers | Kaynak v1'in uzun oturum etiketi pencere dışındaki oturum bitişine ve geçmişe dönük temizliğe bağlı; tek pencere boşluğu kişiselleştirmede tek başına yeterli olmayabilir. Sabit `timezone+1` saat yaklaşımı, bilinmeyen önceki oturumun sıfırla gösterilmesi, nihai ekip şeması, Hamza'nın kronolojik protokolü ve Yiğit'in mobil arayüzü açık. Kullanıcı geri bildirimi/canlı veri ve mobil doğrulama yok; genel araştırma başarıları bunların yerine geçmez. |
+| Current Stage | Aşama 7 devam ediyor. Genel model ve isteğe bağlı Android hatırlatma gönderimi Pixel 8 ARM64 emülatöründe doğrulandı. Prototip için teknik bitiş hedefi 29 Kasım, final sunumu 1 Aralık 2026. Aşama 5 henüz başlamadı. |
+| Current Task | Fold_1 XGBoost cihazın CPU'sunda tahmin üretiyor. Manuel sorgu ve WorkManager, model kaydından sonra aynı hatırlatma politikasını çağırıyor. [Android teslim ve test notu](mobile_model_export.md). |
+| Last Completed Task | Pixel 8 API 37 ARM64 üzerinde 40 birim ve 5 emülatör testi geçti. T20'de sıfır karar farkı. Zamanında pozitif tahmin tek Android bildirimi üretti. Gecikmiş ve kapalı ayar senaryoları bastırıldı. Aynı imzayla APK güncellemesi yerel kayıtları korudu. |
+| Next Action | Murat'ın fiziksel cihazında güncelleme ve kullanım hatırlatması akışını doğrula. Pilot ZIP'i gelince uygun pencere ve etiket kapsamını incele. |
+| Current Blockers | Fiziksel cihazda arka plan zamanlaması ve pil etkisi açık. Kişiselleştirme için pilot veri, v1 uzun oturum etiketinin erişilebilirlik zamanı ve kronolojik protokol gerekli. |
 
 ## Kaynaklar ve kapsam
 
@@ -25,7 +25,7 @@ Araştırma sorusu: Çok kullanıcılı veriden öğrenilen bilgi, kişiselleşt
 
 İlk kaynak 342 katılımcılı Mobile Phone Use Dataset'tir; ilişkili yayın 337 kullanıcıyı analiz eder. Veri setinde doğrudan istenmeyen kullanım etiketi yoktur. Tamamlanan 30 dakikalık pencerenin özellikleri sonraki pencerenin yoğun kullanım proxy sonucunu tahmin eder. Kullanıcı geri bildirimi ayrı bir etiket kaynağıdır. Proje farkındalık desteğidir; tanı, tedavi veya bağımlılık azalması iddiası üretmez.
 
-Başlangıç yöntemleri sabit kural ve Logistic Regression; ana modeller Random Forest ve XGBoost'tur. Kişiselleştirme, kişisel geçmişe daha yüksek örnek ağırlığı vererek ortak veride yeniden eğitimle sınanır. LSTM, yeni model aileleri, backend, ekran görüntüsü veya kaydırma analizi bu planın ilk kapsamına eklenmez. Mobil model formatı henüz seçilmemiştir; cihazda yeniden eğitim hazır kabul edilmez.
+Başlangıç yöntemleri sabit kural ve Logistic Regression; ana modeller Random Forest ve XGBoost'tur. Kişiselleştirme, kişisel geçmişe daha yüksek örnek ağırlığı vererek ortak veride yeniden eğitimle sınanır. LSTM, yeni model aileleri, backend, ekran görüntüsü veya kaydırma analizi bu planın ilk kapsamına eklenmez. Genel model prototipi için ONNX paketi doğrulandı. Cihaz çalışması Aşama 7'de açık.
 
 İlk repo incelemesinde yalnızca README ve yer tutucular vardı. Bu başlangıç gözlemidir; güncel kod/deney kanıtları üst takip tablosunda ve günlükte yer alır. 11 Kasım'da İsmail'in gönderdiği hazırlanmış veri ve üretim betiği de incelendi; diğer ekip bileşenlerinin tamamlandığı varsayılmadı.
 
@@ -187,23 +187,25 @@ Tamamlanma model tarafındaki ortak API, örnek ağırlığı, test ve gerçek g
 
 ## Aşama 7 — Model teslimi ve entegrasyon desteği
 
-**Durum:** `Not Started`
+**Durum:** `In Progress`
+
+Fold_1 XGBoost [teslim paketi](mobile_model_export.md) masaüstünde ve Pixel 8 API 37 ARM64 emülatöründe doğrulandı. Karar eşiği kayıtlı model ve doğrulama artefaktından alındı (`score >= 0.25`). T20 ve Room akışı sentetik girdilerle geçti. Fiziksel cihaz doğrulaması ile kaynak ve Android saat kurallarının olay düzeyindeki farkı açık.
 
 **Amaç:** Seçilen modeli, beklediği girdiler ve çıktı anlamıyla birlikte Yiğit'e doğrulanabilir biçimde teslim etmek.
 
 **Yapılacak işler**
 
-- [ ] Seçilen modeli ve gerekli ön işlemeyi kaydet; sürüm, eğitim verisi/etiket/bölme bilgilerini ilişkilendir.
-- [ ] Özellik adları ve sırası, veri tipleri, birimleri ve eksik/geçersiz girdi davranışını belgele.
-- [ ] Tahmin olasılığı/skoru, karar etiketi, karar eşiği ve model sürümü çıktısını tanımla; tahmin olasılığını doğrulanmış bir klinik risk gibi sunma.
-- [ ] Kaydedilen model yeniden yüklendiğinde aynı örneklerde tutarlı tahmin ürettiğini doğrula.
+- [x] Seçilen modeli ve gerekli ön işlemeyi kaydet; sürüm, eğitim verisi/etiket/bölme bilgilerini ilişkilendir.
+- [x] Özellik adları ve sırası, veri tipleri, birimleri ve eksik/geçersiz girdi davranışını belgele.
+- [x] Tahmin olasılığı/skoru, karar etiketi, karar eşiği ve model sürümü çıktısını tanımla; tahmin olasılığını doğrulanmış bir klinik risk gibi sunma.
+- [x] Kaydedilen model yeniden yüklendiğinde aynı örneklerde tutarlı tahmin ürettiğini doğrula.
 - [ ] Yiğit ile entegrasyon formatını ve örnek girdilerin beklenen çıktılarını doğrula; sentetik ortak örnekleri gerçek kullanıcı kayıtlarından ayrı tut.
 - [ ] Murat ve Yiğit'in Python/Android özellik eşliği ve mobil çalıştırma testlerine model tarafında destek ver.
-- [ ] ONNX Runtime Mobile adayı veya dışa aktarılmış karar kuralları alternatifini ekip testlerine göre değerlendir; formatı ve cihazda uyarlamayı peşinen kesinleştirme. Yapılamayan kontrolü teslim kaydında belirt.
+- [x] ONNX Runtime uyumluluğunu ve mobil CPU skor eşliğini doğrula. Pixel 8 API 37 ARM64 üzerinde T20 geçti. Fiziksel cihaz ölçümü açık.
 
 **Bağımlılıklar:** Aşama 6 model seçimi ve gerekiyorsa koşulları; Aşama 1 sözleşmesi; Yiğit'in entegrasyon çalışması; Murat'ın Android özellik çıkarımı ve test cihazları. Model teslimi Kaan'ın, uygulamaya bağlama/sistem testi Yiğit'in, Android geliştirme Murat'ın alanıdır.
 
-**İlgili dosyalar:** Model tarafında `src/models/` ve `tests/`, yerel model dosyaları için `models/`, teslim açıklaması için `reports/`; `src/integration/` ve `android/` ekip bağımlılıklarıdır.
+**İlgili dosyalar:** [Dışa aktarım kodu](../src/models/mobile_export.py), [model testi](../tests/test_mobile_export.py), [teslim notu](mobile_model_export.md) ve Git dışında tutulan `models/mobile/dataset_v1-xgboost-fold-1-v1/`. `src/integration/` ve `android/` ekip bağımlılıklarıdır.
 
 **Tamamlanma kriterleri:** Yeniden yüklenebilen model, girdi/çıktı belgesi ve sürüm bilgisi mevcut; Yiğit ile format doğrulanmış; model teslim ve mobil test sonuçları veya açık sınırlılıkları kaydedilmiş olmalı. Cihazda denenmemiş çıktı mobilde çalışıyor diye sunulmaz.
 
@@ -249,6 +251,9 @@ Tamamlanma model tarafındaki ortak API, örnek ağırlığı, test ve gerçek g
 | 11 Kasım 2026 | V1 seçimi: LR C=1 ve eşik 0,25; RF depth=12/leaf=10, eşikler 0,70/0,65/0,75; XGBoost depth/tree 5/150, 3/300, 5/150 ve eşikler 0,25/0,25/0,30. RF sınıf ağırlığı yalnızca eğitimde; XGBoost scale_pos_weight=1. | Aynı v1 deneyinde ilk/seçili F1: LR 0,438→0,504, RF 0,456→0,524, XGBoost 0,453→0,527. Ayar ve eşik etkisi birlikte değerlendirilir; eski veri deneyiyle doğrudan iyileşme karşılaştırması yapılmaz. |
 | 11 Kasım 2026 | Doğrulama: 86 test; 1.449.020 test tahmininin kapsamı ve confusion/F1/AP/ROC-AUC kontrolü; 9 seçili modelin kaydet/yükle sonrası tüm test skor ve kararları aynı. | Toplu sonuç/görseller `reports/model_refinement_dataset_v1/`; satır çıktıları `data/processed/`, eğitilmiş modeller `models/` altında yerel tutulur. |
 | 12 Kasım 2026 | Genel model iyileştirmesinin yöntem, ayar, test sonuçları ve sınırlılıkları raporlandı. | [Model Refinement and Test Submission](model_refinement_test_submission.pdf). Yeni deney veya kişiselleştirme sonucu içermez. |
+| 26 Kasım 2026 | Prototip için önceden belirlenen fold_1 XGBoost modeli, eğitim medyanları ve `0.25` eşiğiyle ONNX'e aktarıldı. | [Teslim kaydı](mobile_model_export.md). 362.255 gerçek pencerede maksimum mutlak skor farkı 6,56 × 10⁻⁷ ve sıfır karar farkı. 16 golden örnek, 128 eksiklik maskesi ve 88 test geçti. Android T20 açık. |
+| 26 Kasım 2026 | ONNX paketi Kotlin `Predictor` arayüzüne ve ortak Room kayıt yoluna bağlandı. | [Mobil test kaydı](mobile_model_export.md). Pixel 8 API 37 ARM64 üzerinde T20, 16 sentetik girdi, sıfır karar farkı, 4,17 × 10⁻⁷ maksimum skor farkı. 40 birim testi ve 3 emülatör testi geçti. |
+| 26 Kasım 2026 | Model tahmininden Android hatırlatma gönderimine bağlantı eklendi. Hatırlatmalar gönüllü ayarla etkinleştirilir. | [Android doğrulaması](../android/README.md#kullanım-hatırlatmaları). Gerçek model, sentetik olay dizisiyle zamanında pozitif tahmin ve tek bildirim üretti. Gecikmiş ve kapalı ayar kontrolleri geçti. Fiziksel pilot açık. |
 
 ### Kişiselleştirme öncesi açık kararlar
 
@@ -256,4 +261,4 @@ Tamamlanma model tarafındaki ortak API, örnek ağırlığı, test ve gerçek g
 - V1 sabit proxy eşiklerini korur; önceki araştırma eğitim yüzdeliklerini kullanmıştır. V1 saatleri `ts_raw/1000 + (timezone+1)*3600` ile üretilir; gerçek DST geçmişi doğrulanmadı. Yeni FP/gün paydası yerel tarih, eski deneylerde UTC'dir.
 - `prev_session_s` pencere başlangıcında bitmiş oturumu kullanır; bilinmeyen geçmiş sıfır olabilir. Heartbeat geçerliliği kesintisiz gözlem garantisi değildir. Uygunluk tam kayıt üzerinden geçmişe dönük seçilir; canlı kapsam doğrulaması sayılmaz.
 - `hist_days` ve `valid_days` 48-pencere eşdeğeridir; 1/3/7/14 farklı kayıt günüyle karıştırılmaz. Kişiselleştirme genel/personal-only/ağırlıklı modelleri aynı gelecek test döneminde karşılaştıracaktır.
-- Kullanıcı geri bildirimi ayrı etikettir; proxy ile doğrudan birleştirilmez. SHAP, kalibrasyon, kişiselleştirme, nihai mobil format ve cihaz testleri tamamlanmadı.
+- Kullanıcı geri bildirimi ayrı etikettir; proxy ile doğrudan birleştirilmez. SHAP, kalibrasyon, kişiselleştirme ve cihaz testleri açık.

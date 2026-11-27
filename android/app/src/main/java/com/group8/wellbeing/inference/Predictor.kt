@@ -14,7 +14,8 @@ enum class PredictionRejectionReason {
     MODEL_NOT_INSTALLED,
     SCHEMA_MISMATCH,
     INVALID_QUALITY_WINDOW,
-    NON_FINITE_FEATURE
+    NON_FINITE_FEATURE,
+    MODEL_RUNTIME_ERROR
 }
 
 data class FeatureVector(
@@ -107,7 +108,14 @@ object PredictionRunner {
             )
         }
 
-        val score = predictor.predictRawScore(vector)
+        val score = try {
+            predictor.predictRawScore(vector)
+        } catch (_: PredictionRuntimeException) {
+            return PredictionOutcome.Rejected(
+                reason = PredictionRejectionReason.MODEL_RUNTIME_ERROR,
+                detail = "Yerel model bu pencere için skor üretemedi."
+            )
+        }
         if (!score.isFinite()) {
             return PredictionOutcome.Rejected(
                 reason = PredictionRejectionReason.NON_FINITE_FEATURE,

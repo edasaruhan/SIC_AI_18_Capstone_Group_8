@@ -13,30 +13,42 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import com.group8.wellbeing.data.RoomWellbeingRepository
 import com.group8.wellbeing.data.SharedPrefsControlStore
 import com.group8.wellbeing.data.local.WellbeingDatabase
+import com.group8.wellbeing.domain.ReminderUserAction
+import com.group8.wellbeing.inference.BundledPredictor
+import com.group8.wellbeing.reminders.ReminderDelivery
+import com.group8.wellbeing.reminders.ReminderNotifications
 import com.group8.wellbeing.ui.theme.WellbeingTheme
 import com.group8.wellbeing.usage.AndroidUsageEventReader
 import com.group8.wellbeing.usage.NotificationPermissionChecker
 import com.group8.wellbeing.usage.UsageAccessChecker
 import com.group8.wellbeing.worker.WorkManagerCollectionScheduler
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 class MainActivity : ComponentActivity() {
     private val viewModel: MainViewModel by viewModels {
+        val appContext = applicationContext
+        val database = WellbeingDatabase.getInstance(appContext)
+        val controlStore = SharedPrefsControlStore(appContext)
         MainViewModel.Factory(
-            controlStore = SharedPrefsControlStore(applicationContext),
-            usageEventReader = AndroidUsageEventReader(applicationContext),
+            controlStore = controlStore,
+            usageEventReader = AndroidUsageEventReader(appContext),
             localDataRepository = RoomWellbeingRepository(
-                WellbeingDatabase.getInstance(applicationContext)
+                database,
+                predictorProvider = { BundledPredictor.get(appContext.assets) },
+                reminderDelivery = ReminderDelivery(appContext, database, controlStore::read)
             ),
-            collectionScheduler = WorkManagerCollectionScheduler(applicationContext)
+            collectionScheduler = WorkManagerCollectionScheduler(appContext)
         )
     }
 
@@ -76,6 +88,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        recordReminderOpened(intent)
         refreshPermissions()
         setContent {
             val state by viewModel.uiState.collectAsState()
@@ -119,6 +132,7 @@ class MainActivity : ComponentActivity() {
                         onOpenUsageAccessSettings = { openUsageAccessSettings() },
                         onOpenAppDetailsSettings = { openAppDetailsSettings() },
                         onRequestNotificationPermission = { requestNotificationPermission() },
+                        onSetRemindersEnabled = { viewModel.setRemindersEnabled(it) },
                         onPauseCollection = { viewModel.pauseCollection() },
                         onResumeCollection = { viewModel.resumeCollection() },
                         onManualCheckClick = {
@@ -139,6 +153,21 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         refreshPermissions()
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        recordReminderOpened(intent)
+    }
+
+    private fun recordReminderOpened(intent: Intent) {
+        if (intent.action != ReminderNotifications.ACTION_OPEN) return
+        val eventId = intent.getLongExtra(ReminderNotifications.EXTRA_EVENT_ID, 0L)
+        if (eventId <= 0) return
+        lifecycleScope.launch(Dispatchers.IO) {
+            WellbeingDatabase.getInstance(applicationContext).wellbeingDao()
+                .recordReminderAction(eventId, ReminderUserAction.OPENED.name)
+        }
     }
 
     private fun refreshPermissions() {

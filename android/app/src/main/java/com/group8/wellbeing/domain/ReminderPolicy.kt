@@ -16,7 +16,8 @@ enum class ReminderSuppressedReason {
     DUPLICATE_TARGET_WINDOW,
     QUIET_HOURS,
     DAILY_CAP_REACHED,
-    COOLDOWN_ACTIVE
+    COOLDOWN_ACTIVE,
+    NOTIFICATION_POST_FAILED
 }
 
 enum class ReminderUserAction {

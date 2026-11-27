@@ -1,7 +1,7 @@
 package com.group8.wellbeing.data
 
-import android.app.NotificationManager
 import android.content.Context
+import com.group8.wellbeing.reminders.ReminderNotifications
 import java.util.UUID
 
 data class ControlSnapshot(
@@ -14,7 +14,8 @@ data class ControlSnapshot(
     val pausedAtMs: Long?,
     val resumedAtMs: Long?,
     val backfillPausedPeriod: Boolean,
-    val darkThemeEnabled: Boolean
+    val darkThemeEnabled: Boolean,
+    val remindersEnabled: Boolean = false
 ) {
     val isConsentAccepted: Boolean
         get() = consentVersion != null && consentAcceptedAtMs != null && !consentDeclined
@@ -28,6 +29,7 @@ interface ControlStore {
     fun pauseCollection(pausedAtMs: Long): ControlSnapshot
     fun resumeCollection(resumedAtMs: Long, backfillPausedPeriod: Boolean = false): ControlSnapshot
     fun setDarkThemeEnabled(enabled: Boolean): ControlSnapshot
+    fun setRemindersEnabled(enabled: Boolean): ControlSnapshot
     fun deleteAllLocalData(): ControlSnapshot
 }
 
@@ -63,7 +65,8 @@ class SharedPrefsControlStore(context: Context) : ControlStore {
             pausedAtMs = pausedAt,
             resumedAtMs = resumedAt,
             backfillPausedPeriod = prefs.getBoolean(KEY_BACKFILL_PAUSED, false),
-            darkThemeEnabled = prefs.getBoolean(KEY_DARK_THEME, true)
+            darkThemeEnabled = prefs.getBoolean(KEY_DARK_THEME, true),
+            remindersEnabled = prefs.getBoolean(KEY_REMINDERS_ENABLED, false)
         )
     }
 
@@ -84,6 +87,7 @@ class SharedPrefsControlStore(context: Context) : ControlStore {
             .remove(KEY_CONSENT_ACCEPTED_AT)
             .putBoolean(KEY_CONSENT_DECLINED, true)
             .apply()
+        ReminderNotifications(appContext).cancel()
         return read()
     }
 
@@ -100,6 +104,7 @@ class SharedPrefsControlStore(context: Context) : ControlStore {
             .putLong(KEY_PAUSED_AT, pausedAtMs)
             .putBoolean(KEY_BACKFILL_PAUSED, false)
             .apply()
+        ReminderNotifications(appContext).cancel()
         return read()
     }
 
@@ -117,10 +122,13 @@ class SharedPrefsControlStore(context: Context) : ControlStore {
         return read()
     }
 
+    override fun setRemindersEnabled(enabled: Boolean): ControlSnapshot {
+        prefs.edit().putBoolean(KEY_REMINDERS_ENABLED, enabled).apply()
+        if (!enabled) ReminderNotifications(appContext).cancel()
+        return read()
+    }
+
     override fun deleteAllLocalData(): ControlSnapshot {
-        val notificationManager =
-            appContext.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
-        notificationManager?.cancelAll()
         val keepDarkTheme = prefs.getBoolean(KEY_DARK_THEME, true)
         val nextParticipantId = UUID.randomUUID().toString()
         prefs.edit()
@@ -128,6 +136,7 @@ class SharedPrefsControlStore(context: Context) : ControlStore {
             .putString(KEY_PARTICIPANT_ID, nextParticipantId)
             .putBoolean(KEY_DARK_THEME, keepDarkTheme)
             .apply()
+        ReminderNotifications(appContext).cancel()
         return read()
     }
 
@@ -153,5 +162,6 @@ class SharedPrefsControlStore(context: Context) : ControlStore {
         private const val KEY_RESUMED_AT = "resumed_at_ms"
         private const val KEY_BACKFILL_PAUSED = "backfill_paused_period"
         private const val KEY_DARK_THEME = "dark_theme_enabled"
+        private const val KEY_REMINDERS_ENABLED = "reminders_enabled"
     }
 }

@@ -7,6 +7,8 @@ import com.group8.wellbeing.data.RoomWellbeingRepository
 import com.group8.wellbeing.data.SharedPrefsControlStore
 import com.group8.wellbeing.data.local.WellbeingDatabase
 import com.group8.wellbeing.domain.CollectionStateResolver
+import com.group8.wellbeing.inference.BundledPredictor
+import com.group8.wellbeing.reminders.ReminderDelivery
 import com.group8.wellbeing.usage.AndroidUsageEventReader
 import com.group8.wellbeing.usage.UsageAccessChecker
 
@@ -29,7 +31,12 @@ class UsageCollectionWorker(
             return Result.success()
         }
 
-        val repository = RoomWellbeingRepository(WellbeingDatabase.getInstance(applicationContext))
+        val database = WellbeingDatabase.getInstance(applicationContext)
+        val repository = RoomWellbeingRepository(
+            database,
+            predictorProvider = { BundledPredictor.get(applicationContext.assets) },
+            reminderDelivery = ReminderDelivery(applicationContext, database, controlStore::read)
+        )
         val stats = repository.readStorageStats(snapshot.participantId)
         val nowMs = System.currentTimeMillis()
         val planned = BackgroundQueryWindowPlanner.plan(
